@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux 基礎與系統管理 · 題庫系統</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --green: #3fb950;
+    --green-dim: #1a4a25;
+    --red: #f85149;
+    --red-dim: #3d1a1a;
+    --yellow: #e3b341;
+    --blue: #58a6ff;
+    --blue-dim: #1a2a4a;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #484f58;
+    --accent: #79c0ff;
+    --prompt: #3fb950;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--prompt);
+    letter-spacing: 0.5px;
+  }
+  .logo span { color: var(--text-muted); }
+  .header-stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 20px;
+  }
+  .header-stats .stat-val { color: var(--accent); }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    width: 100%;
+    flex: 1;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .start-screen {
+    text-align: center;
+    padding: 60px 0;
+  }
+  .start-terminal {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .start-terminal .line { margin-bottom: 4px; }
+  .start-terminal .cmd { color: var(--green); }
+  .start-terminal .out { color: var(--text); }
+  .start-terminal .comment { color: var(--text-dim); }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+  .mode-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-width: 640px;
+    margin: 0 auto 32px;
+  }
+  .mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .mode-card:hover { border-color: var(--blue); background: var(--surface2); }
+  .mode-card.selected { border-color: var(--green); background: var(--green-dim); }
+  .mode-icon { font-size: 24px; margin-bottom: 8px; }
+  .mode-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .mode-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── Settings Panel ── */
+  .settings-panel {
+    max-width: 640px;
+    margin: 0 auto 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    justify-content: space-between;
+  }
+  .setting-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .setting-label .lbl-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    display: block;
+    margin-top: 2px;
+  }
+  .setting-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Custom count input */
+  .count-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .count-stepper {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .stepper-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    width: 32px;
+    height: 34px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.12s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stepper-btn:hover { color: var(--text); background: var(--border); }
+  .count-input {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    width: 56px;
+    text-align: center;
+    outline: none;
+    -moz-appearance: textfield;
+    padding: 0 4px;
+  }
+  .count-input::-webkit-outer-spin-button,
+  .count-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .count-max-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.12s;
+  }
+  .count-max-btn:hover { color: var(--text-muted); border-color: var(--text-dim); }
+
+  /* Range selectors */
+  .range-row {
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  .range-row.visible { display: flex; }
+  .range-inputs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .range-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    width: 72px;
+    text-align: center;
+    padding: 6px 8px;
+    border-radius: 6px;
+    outline: none;
+    -moz-appearance: textfield;
+    transition: border-color 0.12s;
+  }
+  .range-input::-webkit-outer-spin-button,
+  .range-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .range-input:focus { border-color: var(--blue); }
+  .range-sep {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 0 2px;
+  }
+  .range-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 5px;
+    transition: all 0.2s;
+  }
+  .range-badge.active { color: var(--green); border-color: var(--green-dim); background: var(--green-dim); }
+
+  /* Quick range presets */
+  .range-presets {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .preset-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.12s;
+  }
+  .preset-btn:hover { color: var(--text-muted); border-color: var(--text-dim); }
+  .preset-btn.active-preset { color: var(--blue); border-color: var(--blue); background: var(--blue-dim); }
+
+  .btn-primary {
+    background: var(--green);
+    color: #0d1117;
+    border: none;
+    padding: 12px 36px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--text-muted); }
+
+  /* ── Quiz Screen ── */
+  .quiz-progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .progress-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 16px;
+    animation: fadeSlide 0.2s ease;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .question-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .q-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .q-diff {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+  .q-diff.easy { background: #1a3a20; color: #56d364; }
+  .q-diff.medium { background: #2d2a1a; color: #e3b341; }
+  .q-diff.hard { background: #3d1a1a; color: #f85149; }
+
+  .question-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    margin-bottom: 24px;
+    font-weight: 400;
+  }
+
+  .options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    transition: all 0.12s;
+    width: 100%;
+  }
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--blue);
+    background: var(--blue-dim);
+  }
+  .option-btn:disabled { cursor: default; }
+  .option-btn.correct { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+  .option-btn.wrong { border-color: var(--red); background: var(--red-dim); color: var(--red); }
+  .option-btn.reveal { border-color: var(--green); background: var(--green-dim); color: var(--green); opacity: 0.7; }
+  .option-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .option-btn.correct .option-key { background: var(--green); border-color: var(--green); color: #0d1117; }
+  .option-btn.wrong .option-key { background: var(--red); border-color: var(--red); color: #fff; }
+  .option-btn.reveal .option-key { background: var(--green); border-color: var(--green); color: #0d1117; }
+
+  .explanation-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--yellow);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-muted);
+    margin-top: 16px;
+    animation: fadeIn 0.2s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .explanation-box strong { color: var(--yellow); font-size: 11px; font-family: 'JetBrains Mono', monospace; display: block; margin-bottom: 6px; }
+
+  .quiz-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+  }
+  .btn-nav {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.12s;
+  }
+  .btn-nav:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-nav:disabled { opacity: 0.3; cursor: default; }
+  .btn-next {
+    background: var(--blue);
+    color: #0d1117;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: opacity 0.12s;
+  }
+  .btn-next:hover { opacity: 0.85; }
+  .btn-skip {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.12s;
+  }
+  .btn-skip:hover { color: var(--text-muted); border-color: var(--text-dim); }
+
+  /* ── Result Screen ── */
+  .result-header { text-align: center; padding: 40px 0 32px; }
+  .result-score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    border: 3px solid var(--border);
+    position: relative;
+  }
+  .score-pct { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; }
+  .score-label { font-size: 11px; color: var(--text-muted); }
+  .result-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .result-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .result-stat .val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; display: block; }
+  .result-stat .lbl { font-size: 12px; color: var(--text-muted); margin-top: 4px; display: block; }
+  .val.good { color: var(--green); }
+  .val.bad { color: var(--red); }
+  .val.neutral { color: var(--yellow); }
+
+  .review-section h3 { font-size: 14px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .review-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.12s; }
+  .review-item:hover { border-color: var(--blue); }
+  .review-item.wrong-item { border-left: 3px solid var(--red); }
+  .review-item-header { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 6px; }
+  .ri-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); flex-shrink: 0; margin-top: 2px; }
+  .ri-q { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .ri-answers { display: flex; gap: 16px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-left: 28px; }
+  .ri-mine { color: var(--red); }
+  .ri-correct { color: var(--green); }
+  .result-actions { display: flex; gap: 12px; justify-content: center; margin-top: 32px; flex-wrap: wrap; }
+
+  .kb-hint {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 12px;
+  }
+  .kb-hint kbd {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--text-muted);
+  }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+  .tab-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 7px 16px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: 'JetBrains Mono', monospace; transition: all 0.12s; }
+  .tab-btn.active { background: var(--surface2); color: var(--text); border-color: var(--blue); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span>$</span> linux-quiz <span>--interactive</span>
+  </div>
+  <div class="header-stats" id="headerStats" style="display:none">
+    <span>題目 <span class="stat-val" id="hCurrent">0</span>/<span class="stat-val" id="hTotal">0</span></span>
+    <span>✓ <span class="stat-val" id="hCorrect" style="color:var(--green)">0</span></span>
+    <span>✗ <span class="stat-val" id="hWrong" style="color:var(--red)">0</span></span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- START SCREEN -->
+  <div class="screen active" id="screenStart">
+    <div class="start-screen">
+      <div class="start-terminal">
+        <div class="line"><span class="cmd">$ cat README.md</span></div>
+        <div class="line"><span class="out">Linux 基礎與系統管理 · 更正後題庫</span></div>
+        <div class="line"><span class="comment"># 共 290 題 · 單選 · 含解析</span></div>
+        <div class="line"><span class="comment"># 涵蓋：指令操作、檔案系統、帳號管理</span></div>
+        <div class="line"><span class="comment"># 網路、Shell Script、核心模組 等主題</span></div>
+        <div class="line" style="margin-top:8px"><span class="cmd">$ _</span></div>
+      </div>
+      <h1>Linux 題庫複習系統</h1>
+      <p class="subtitle">選擇模式，開始練習</p>
+
+      <div class="mode-cards">
+        <div class="mode-card selected" data-mode="sequential" onclick="selectMode(this,'sequential')">
+          <div class="mode-icon">📋</div>
+          <div class="mode-name">順序練習</div>
+          <div class="mode-desc">依題號逐題作答</div>
+        </div>
+        <div class="mode-card" data-mode="random" onclick="selectMode(this,'random')">
+          <div class="mode-icon">🔀</div>
+          <div class="mode-name">隨機練習</div>
+          <div class="mode-desc">打亂題目順序</div>
+        </div>
+        <div class="mode-card" data-mode="wrong" onclick="selectMode(this,'wrong')">
+          <div class="mode-icon">🔁</div>
+          <div class="mode-name">錯題複習</div>
+          <div class="mode-desc">只出現錯過的題</div>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="settings-panel">
+
+        <!-- Row 1: 隨機模式題目範圍 -->
+        <div class="setting-row range-row" id="rangeRow">
+          <div class="setting-label">
+            題目範圍
+            <span class="lbl-hint">從第 N 題到第 M 題</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+            <div class="range-inputs">
+              <input type="number" class="range-input" id="rangeFrom" value="1" min="1" max="290" placeholder="1">
+              <span class="range-sep">—</span>
+              <input type="number" class="range-input" id="rangeTo" value="290" min="1" max="290" placeholder="290">
+              <span class="range-badge" id="rangeBadge">290 題可選</span>
+            </div>
+            <div class="range-presets">
+              <button class="preset-btn" onclick="applyPreset(1,100)">1–100</button>
+              <button class="preset-btn" onclick="applyPreset(101,200)">101–200</button>
+              <button class="preset-btn" onclick="applyPreset(201,290)">201–290</button>
+              <button class="preset-btn" onclick="applyPreset(1,290)">全部</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: 練習題數 -->
+        <div class="setting-row">
+          <div class="setting-label">
+            練習題數
+            <span class="lbl-hint" id="countHint">最多 290 題</span>
+          </div>
+          <div class="count-input-wrap">
+            <div class="count-stepper">
+              <button class="stepper-btn" onclick="adjustCount(-10)">−−</button>
+              <button class="stepper-btn" onclick="adjustCount(-1)">−</button>
+              <input type="number" class="count-input" id="countInput" value="20" min="1" max="290">
+              <button class="stepper-btn" onclick="adjustCount(1)">+</button>
+              <button class="stepper-btn" onclick="adjustCount(10)">++</button>
+            </div>
+            <button class="count-max-btn" onclick="setCountMax()">全選</button>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="btn-primary" onclick="startQuiz()">▶ 開始練習</button>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="screen" id="screenQuiz">
+    <div class="quiz-progress">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <div class="progress-text" id="progressText">0 / 0</div>
+    </div>
+
+    <div class="question-card" id="questionCard">
+      <div class="question-meta">
+        <span class="q-num" id="qNum">#1</span>
+        <span class="q-diff" id="qDiff">中</span>
+      </div>
+      <div class="question-text" id="qText"></div>
+      <div class="options-list" id="optionsList"></div>
+      <div class="explanation-box" id="explanationBox" style="display:none">
+        <strong>◆ 解析</strong>
+        <span id="explanationText"></span>
+      </div>
+    </div>
+
+    <div class="quiz-actions">
+      <button class="btn-nav" id="btnPrev" onclick="goPrev()">← 上一題</button>
+      <button class="btn-skip" onclick="skipQuestion()">跳過</button>
+      <button class="btn-next" id="btnNext" onclick="goNext()" disabled>下一題 →</button>
+    </div>
+    <div class="kb-hint">
+      鍵盤：<kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> 選擇答案 · <kbd>→</kbd> 下一題 · <kbd>←</kbd> 上一題
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="screenResult">
+    <div class="result-header">
+      <div class="result-score-circle" id="scoreCircle">
+        <span class="score-pct" id="scorePct">--%</span>
+        <span class="score-label">答對率</span>
+      </div>
+      <h1 id="resultTitle">完成！</h1>
+      <p class="subtitle" id="resultSubtitle"></p>
+    </div>
+
+    <div class="result-stats-grid">
+      <div class="result-stat">
+        <span class="val neutral" id="rTotal">0</span>
+        <span class="lbl">作答題數</span>
+      </div>
+      <div class="result-stat">
+        <span class="val good" id="rCorrect">0</span>
+        <span class="lbl">答對</span>
+      </div>
+      <div class="result-stat">
+        <span class="val bad" id="rWrong">0</span>
+        <span class="lbl">答錯</span>
+      </div>
+    </div>
+
+    <div class="review-section">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('wrong')">錯誤題目 (<span id="wrongCount">0</span>)</button>
+        <button class="tab-btn" onclick="switchTab('all')">全部記錄</button>
+      </div>
+      <div class="tab-panel active" id="panelWrong">
+        <div id="wrongList"></div>
+        <p id="noWrong" style="text-align:center;color:var(--green);font-size:14px;padding:24px 0;display:none">🎉 全部答對，太厲害了！</p>
+      </div>
+      <div class="tab-panel" id="panelAll">
+        <div id="allList"></div>
+      </div>
+    </div>
+
+    <div class="result-actions">
+      <button class="btn-secondary" onclick="showScreen('screenStart')">回首頁</button>
+      <button class="btn-primary" onclick="retryWrong()" id="btnRetryWrong">重練錯題</button>
+      <button class="btn-secondary" onclick="startQuiz()">再來一次</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  QUESTION BANK (290 questions)
+// ─────────────────────────────────────────────
+const ALL_QUESTIONS = [
+{id:1,text:"Peter 最近正在利用 C 語言開發 Linux 作業系統程式，他需要查閱有關於 printf() 函數的相關用法，請問下列哪一個指令可以協助他查詢並列出 Linux 上所有 printf() 相關的說明文件？",opts:["man printf","man -k printf","info printf","echo printf() help"],ans:1,diff:"易",exp:"man 指令的 -k 參數可以列出相關查詢的文件。"},
+{id:2,text:"安裝 Ubuntu Desktop 22.04 LTS，關於最低 RAM 的要求，下列哪一項正確？",opts:["2 GB","4 GB","6 GB","8 GB"],ans:1,diff:"中",exp:"Ubuntu 建議配備為 4 GB RAM。"},
+{id:3,text:"為了增進磁碟效能，買了一顆「固態硬碟（SSD）」。但在打開機箱蓋插入後，發現無法找到類似 /dev/sd*（如：/dev/sda、/dev/sdb1...等）這樣的名字。像這種固態硬碟（SSD）的裝置名稱，最有可能是下列哪一種？",opts:["/dev/nd*（如：/dev/nd0）","/dev/nvme*（如：/dev/nvme0n1、/dev/nvme0n1p1...等）","/dev/nv*（如：/dev/nva、/dev/nva1...等）","/dev/nvme/*（如：/dev/nvme/n1p1...等）"],ans:1,diff:"中",exp:"NVMe SSD 的裝置名稱格式為 /dev/nvme0n1、/dev/nvme0n1p1 等。"},
+{id:4,text:"因為專案需要，工程師需要建立一個多層次的目錄結構（/w/x/y/z），請問下列哪一項可以滿足工程師的目的？",opts:["mkdir /w; mkdir /x; mkdir /y; mkdir /z","mkdir /w/x/y/z","md /w/x/y/z","mkdir -p /w/x/y/z"],ans:3,diff:"易",exp:"mkdir -p 可以一次建立多層目錄。(A) 指令應為 mkdir /w; mkdir /w/x; mkdir /w/x/y; mkdir /w/x/y/z。(B) 未加 -p 參數會出現錯誤。Linux 無 md 指令。"},
+{id:5,text:"關於 Linux Kernel module 的指令，下列哪一項錯誤？",opts:["指令 modprobe ext4 可以將 ext4 載入到 kernel","指令 modprobe -r ext4 可以將 ext4 從 kernel 移除","指令 modprobe -d ext4 可以將 ext4 從 kernel 移除","Linux Kernel module 的概念可以只載入必要的 module，讓系統更小，運作更加有效率"],ans:2,diff:"中",exp:"modprobe -d 用來指定搜尋目錄，不是移除模組。移除模組應使用 modprobe -r。"},
+{id:6,text:"關於 /lost+found 的敘述，下列哪一項錯誤？",opts:["使用標準的 EXT2/EXT3 檔案系統格式才會產生的一個特殊目錄","當檔案系統發生錯亂時，系統會將遺失關聯的資料放置到該目錄內","系統重新開機時會將該目錄的資料清空","若新加一顆硬碟並掛載於 /disk 目錄中，則系統就會自動產生一個類似以下的目錄：/disk/lost+found"],ans:2,diff:"中",exp:"系統重啟後並不會主動清空 /lost+found 目錄內的內容。"},
+{id:7,text:"下列哪一行指令可將系統最新的兩秒程序資訊存在檔案 proc.txt 中，並且依 CPU 負載量為排序依據？",opts:["ps aux | awk '$3' | sort -n ; sleep 2 > proc.txt","top -d2 -n1 > proc.txt","top -d2 -n1 -b > proc.txt","ps -aux -d2 -n1 > proc.txt"],ans:2,diff:"中",exp:"-d：更新間隔時長（秒）。-n：更新次數限制。-b：batch 模式，可輸出至檔案。"},
+{id:8,text:"下列哪一個指令可以掃描使用者的檔案與目錄？",opts:["quotacheck -v","quotacheck -u","quotacheck -e","quotacheck -i"],ans:1,diff:"中",exp:"quotacheck -u 可以掃描使用者的檔案與目錄（內定動作）。"},
+{id:9,text:"func(){\n\nif [ $1-lt $2]; then\n\necho $1\n\nfunc $(($1+1)) $(($2))\n\n}\n\nfunc 2 10\n下列何者符合描述？",opts:["列出大於 2 小於 10 的數","列出大於等於 2 小於 10 的數","列出大於 2 小於等於 10 的數","列出大於等於 2 小於等於 10 的數"],ans:1,diff:"中",exp:"$a -lt \"$b\"：a 是否小於 b（less than）。"},
+{id:10,text:"在 bc 中，Pi=4*atan(1)（bc 的 atan() 函式為 a()），若 scale=6，執行結果為？",opts:["3.1415","3.14159","3.141592","3141.5"],ans:2,diff:"中",exp:"Pi=4*a(1)，bc 中 scale 的數值代表小數點後面的位數，scale=6 即六位小數。"},
+{id:11,text:"系統管理員在查看 /etc/passwd 這個檔案時，希望將檔案內容依字母 A-z、數字 1-9 做升冪排序並列在螢幕上，請問可以使用下列哪一個指令？",opts:["tac /etc/passwd","cat /etc/passwd","sort /etc/passwd","echo /etc/passwd"],ans:2,diff:"中",exp:"sort 指令可以將檔案內容依字母數字順序進行排序並列於螢幕上。"},
+{id:12,text:"使用下列哪一個文字介面指令，可以用安全的方式連線至遠端的 Linux 作業系統？",opts:["nmap","cp","history","ssh"],ans:3,diff:"中",exp:"ssh 是常見用來以安全方式遠端連線至 Linux 作業系統的文字介面指令。"},
+{id:13,text:"假設 head -1 /etc/passwd 顯示結果為 root:x:0:0:root:/root:/bin/bash，執行 cut -d \":\" -f 1,5-7 後，其顯示結果為何？",opts:["x:/root:/bin/bash","x /root /bin/bash","root:root:/root:/bin/bash","root root /root /bin/bash"],ans:2,diff:"易",exp:"cut -d 指定分隔字元，-f 指定欄位，選取第 1（root）、第 5-7（root,/root,/bin/bash）欄並以 \":\" 隔開。"},
+{id:14,text:"系統管理員使用 Myname=\"Peter\" 設定了環境變數，請問如果要取消該環境變數，應使用下列哪一個指令？",opts:["unlink","unset","del","rm"],ans:1,diff:"中",exp:"環境變數設定之後，若想解除設定，可以利用 unset 指令進行解除。"},
+{id:15,text:"使用 gcc foobar.c -o foobar 進行編譯，請問如何執行編譯出來的執行檔？",opts:["./foobar","./foobar.o","./a.out","./x.aa"],ans:0,diff:"中",exp:"gcc -o 指定輸出檔案名稱為 foobar，使用 ./foobar 即可執行。"},
+{id:16,text:"/etc/fstab 檔案內，正確的欄位排列順序為？",opts:["<掛載路徑> <裝置名稱或UUID> <檔案系統類型> <掛載時參數>","<裝置名稱或UUID> <檔案系統類型> <掛載時參數>","<裝置名稱或UUID> <檔案系統類型> <掛載時參數> <掛載路徑> <備份設定> <fsck優先順序>","<裝置名稱或UUID> <掛載路徑> <檔案系統類型> <掛載時參數> <備份設定> <fsck優先順序>"],ans:3,diff:"中",exp:"/etc/fstab 格式：裝置名稱/UUID、掛載路徑、檔案系統類型、掛載參數、備份設定、fsck 優先順序。"},
+{id:17,text:"在自家 IP 分享器（路由器）讓朋友從網外連線進來，這項功能會運用到哪一項技術？",opts:["IP redirection","Port redirection","Socket redirection","Port Forwarding"],ans:3,diff:"中",exp:"路由器設定外部網路連入應使用 Port Forwarding（通訊埠轉送）。"},
+{id:18,text:"大華買了一顆 4TB 的硬碟，想拿來安裝 Linux 作業系統。他應該使用哪一種分割區格式？",opts:["MBR","GPT","FAT","NTFS"],ans:1,diff:"中",exp:"MBR 只能分割 2TB 以下的硬碟，4TB 應使用 GPT。FAT 與 NTFS 非 Linux 主要格式。"},
+{id:19,text:"程式設計師在輸出 /etc/passwd 檔案內容時，希望可以明確標示出行號，請問可以使用下列哪一個指令？",opts:["number /etc/passwd","ln /etc/passwd","nl /etc/passwd","enu /etc/passwd"],ans:2,diff:"中",exp:"nl 指令可以將輸出至文字介面的檔案內容，每行文字前加上行號。"},
+{id:20,text:"系統管理員登入 Linux 主機後，查看到小明也有利用 pts/0 通道登入系統，若管理員想要遞送訊息給小明，請問可以使用下列哪一個指令？",opts:["write 小明 pts/0","hello pts/0 小明","messenger 小明 pts/0","read 小明 pts/0"],ans:0,diff:"中",exp:"利用 write 可以針對特定通道登入的使用者傳遞訊息。"},
+{id:21,text:"當你在登入操作 Linux 作業系統時，發覺有個指令 hello 不是你想要的指令別名，請問下列哪一個指令可以將它取消？",opts:["unalias hello","unset hello","kill hello","mv hello"],ans:0,diff:"難",exp:"unalias hello 可以取消指令別名。"},
+{id:22,text:"在目前目錄中，利用 shell script（for i in *; do grep 'Music' \"$i\"; done）的主要用途為？",opts:["在目前目錄中，找出所有名稱含有 'Music' 的目錄","在目前目錄中，找出所有名稱含有 'Music' 的檔案","在目前目錄中，找出文本中含有 'Music' 的檔案","在目前目錄中，找出文本中含有 'Music' 的目錄"],ans:2,diff:"中",exp:"for i in * 處理目前目錄下的檔案與目錄；grep 只能搜尋文本檔案，故找出文本中含有 'Music' 的檔案。"},
+{id:23,text:"shell script 中 func1(a,b) 傳回 a、b 的最大值；func2(a,b,c,d) 傳回最大值。執行 ./test.sh 1 3 5 7 後，執行結果為？",opts:["1","3","5","7"],ans:3,diff:"中",exp:"func1 傳回 a、b 的最大值；func2 傳回 a、b、c、d 的最大值，故四個參數 1 3 5 7 的最大值為 7。"},
+{id:24,text:"在 Ubuntu 作業系統中，init 程式目前經改進後，是由下列哪一個程式完成？",opts:["setup","kernel","systemdemo","systemd"],ans:3,diff:"中",exp:"大部分 Linux 發行版都已採用 systemd 替代 System V 和 Upstart，systemd 向下相容 System V。"},
+{id:25,text:"Linux 系統管理員要將已在 golf 群組內的帳號 peter，提升成該群組的管理員，請問可以使用下列哪一個指令？",opts:["passwd golf peter","usermod -AG golf peter","groupmod -A golf peter","gpasswd -A peter golf"],ans:3,diff:"中",exp:"指定群組管理員需要使用 gpasswd 指令，-A 參數指定管理員。"},
+{id:26,text:"下列哪一項是 Ubuntu 22.04 默認的顯示伺服器？",opts:["Mir","Wayland","X11","Xorg"],ans:1,diff:"中",exp:"Wayland 是 Ubuntu 22.04 默認的顯示伺服器。"},
+{id:27,text:"系統管理員登入 Linux 後，若要動態查詢目前系統的運行狀況，可以使用下列哪一個指令？",opts:["cat /etc/proc","ls -p","ps aux","top"],ans:3,diff:"易",exp:"top 指令可以將系統目前的即時動態呈現至文字介面。"},
+{id:28,text:"bash 陣列：linux=(6 6 6 6)，輸出 ${#linux[@]} ${#linux[*]} ${#linux} ${#linux[0]} 的結果為？",opts:["4446","4466","6446","6466"],ans:2,diff:"中",exp:"#linux[@]、#linux[*]：陣列中元素的數量（4）；#linux：第一個元素的字元數（1，值為6）；#linux[0]：索引0元素的值（6）。"},
+{id:29,text:"下列哪一個指令可以快速清除 iptables 的所有規則？",opts:["iptables -F","iptables -Z","iptables -C","iptables -E"],ans:0,diff:"中",exp:"iptables -F（Flush）清除所有規則。-Z 清零計數器，-C 檢查規則，-E 重命名鏈。"},
+{id:30,text:"若小明想要查詢在 Linux 主機上曾下過的指令，請問可以使用下列哪一個指令？",opts:["history","ls","echo","less"],ans:0,diff:"難",exp:"history 指令可以查出使用者曾下過的指令。"},
+{id:31,text:"關於以下 if/elif 判斷 script 的執行結果，下列敘述哪一項錯誤？（程式碼判斷 <10、<100、<1000）",opts:["輸入 1 時，輸出：It is less than 10.","輸入 10 時，輸出：It is less than 100.","輸入 100 時，輸出：It is less than 1000.","輸入 1000 時，輸出：It is greater than 1000."],ans:0,diff:"中",exp:"num1 -lt num2 若 num1 小於 num2 則為真。題目上並沒有輸出 'It is less than 10' 的可能，故 (A) 有誤。"},
+{id:32,text:"若想顯示 /dev/sda 這顆磁碟所有分割區的資訊（裝置名稱、大小、用途...等），應該使用下列哪一個指令？",opts:["du -sh /dev/sda","fdisk -l /dev/sda","df -h /dev/sda","lsusb -t /dev/sda"],ans:1,diff:"中",exp:"fdisk -l 顯示指定硬碟的分割區資訊。du 顯示目錄大小，df 顯示磁碟使用狀況，lsusb 顯示 USB 裝置資訊。"},
+{id:33,text:"系統管理員想取用格式「西元年-月份-日期 24小時:分:秒」的時間，正確的 date 指令為？",opts:["date + \"%YYYY-%MM-%DM %24H:%MM:%SS\"","date + \"$y-$m-$d $h:$m:$s\"","date + \"%Y-%m-%d %H:%M:%S\"","date + \"$yy-$mm-$dd $hh:$mm:$ss\""],ans:2,diff:"中",exp:"date 指令格式：%Y（年）%m（月）%d（日）%H（24小時制時）%M（分）%S（秒）。"},
+{id:34,text:"Linux 系統管理員若想改變新增帳號時的密碼最大有效期限，可以利用下列哪一個檔案？",opts:["/etc/login.defs","/etc/passwd.defs","/etc/shadow.defs","/etc/gshadow.defs"],ans:0,diff:"中",exp:"/etc/login.defs 記錄密碼的最大有效期限。"},
+{id:35,text:"假設目前 shell 工作路徑為 /usr/local，執行 cd ../bin 後，請問會顯示出哪一個目錄？",opts:["/bin","/usr/bin","/usr/local/bin","/usr/home/bin"],ans:1,diff:"中",exp:".. 表示上一層目錄，cd ../bin 從 /usr/local 回到 /usr，再進入 /usr/bin。"},
+{id:36,text:"三顆 512GB 硬碟組成 RAID 5，關於 mdadm 指令建立的結果，下列敘述哪一項錯誤？",opts:["該指令最後會建構出一顆 1536GB 大小的 RAID 5 磁碟陣列","該指令所形成的 RAID 5 硬碟裝置名稱為 /dev/md0","若想將該 RAID 5 硬碟格式化為 ext4，可以透過 mkfs.ext4 /dev/md0 指令完成","確認 /dev/md0 詳細訊息，可下達 mdadm --detail /dev/md0 指令"],ans:0,diff:"中",exp:"RAID 5 磁碟陣列大小是 N-1，三顆 512GB 的實際大小為 (3-1)×512GB = 1024GB，不是 1536GB。"},
+{id:37,text:"若要把某個檔案的權限改成檔案所有者僅可讀寫、其餘權限組僅可讀，應執行下列哪一項指令？",opts:["chmod 755","chmod 644","chmod 722","chmod 622"],ans:1,diff:"中",exp:"Owner 可讀寫為 rw-（6），Group 和 Others 僅可讀為 r--（4），故權限為 644。"},
+{id:38,text:"想要結束自己的程序（PID 為 13131），但執行幾次 kill 13131 都無法終止，應使用下列哪一項指令？",opts:["kill -6 13131","kill -7 13131","kill -8 13131","kill -9 13131"],ans:3,diff:"中",exp:"kill -9（SIGKILL）是所有信號中威力最強悍的，無法被程序攔截。"},
+{id:39,text:"下列哪一個符號可以透過 File Descriptor 將標準錯誤（Standard Error）輸出至一般檔案內？",opts:["<1","0>","2>","3>"],ans:2,diff:"中",exp:"File Descriptor：0（stdin）、1（stdout）、2（stderr）。2> 將標準錯誤重導至檔案。"},
+{id:40,text:"將 date.txt（CSV 格式）的內容以欄位對齊方式列出，請問可以使用下列哪一個指令？",opts:["column -t -s ',' date.txt","type -s ',' -t date.txt","format print('s',date.txt)","printf(date.txt, 's')"],ans:0,diff:"中",exp:"column -t 建立表格，-s 指定分割字元（逗號），可將 CSV 格式整齊輸出。"},
+{id:41,text:"下列哪一項指令可以幫助系統管理者即時監控目前系統內所有程序的執行狀態，包括 CPU 與記憶體的使用量等？",opts:["top","ps -aux","ps -def","jobs -l"],ans:0,diff:"中",exp:"top 指令提供可以即時觀察系統內所有程序執行狀態的介面。"},
+{id:42,text:"小王打算將帳號 comsap 家目錄內所有資料打包到隨身碟，請問可以使用下列哪一個指令？",opts:["locate /home/comsap | tar -czf > /media/removable/comsap.tar.gz","tar -czf /home/comsap > /media/removable/comsap.tar.gz","cd /home; tar -cjf /media/removable/comsap.tar.bz2 comsap","cd /home/comsap tar -cjf /media/removable/comsap.tar.bz2 *"],ans:2,diff:"中",exp:"(A) locate 透過 pipeline 無法達成備份。(B) 有 -f 就不應用輸出導向。(D) tar 前方少分號。只有 (C) 正確。"},
+{id:43,text:"下列哪一項指令可以查看背景執行的第 3 個工作並且將其刪除？",opts:["jobs; exit %3","jobs; halt %3","jobs; kill %3","jobs; stop %3"],ans:2,diff:"中",exp:"jobs：顯示當前 jobs 狀態。kill %3：將 SIGTERM 信號送至第 3 個背景工作。"},
+{id:44,text:"下列哪一個檔案系統屬於日誌檔案系統？",opts:["ext2","ext3/ext4","fat/fat32","exfat"],ans:1,diff:"中",exp:"ext3、ext4、xfs、btrfs、NTFS 均為日誌（journaling）檔案系統；ext2 不是。"},
+{id:45,text:"小王使用 rmdir 指令刪除目錄時出現錯誤，最可能的原因是？",opts:["該目錄被設定為「唯讀」","有其他使用者正在使用該目錄","該目錄內還有其他檔案存在","該目錄名稱有特殊字元"],ans:2,diff:"易",exp:"rmdir 只能刪除空目錄，若目錄內還有其他檔案或目錄則無法使用 rmdir，需使用 rm -r。"},
+{id:46,text:"下列哪一個程式無法進行磁碟分割（disk partition）工作？",opts:["fdisk","gdisk","parted","partprobe"],ans:3,diff:"中",exp:"partprobe 用於通知作業系統核心分割表有異動，不能進行分割。"},
+{id:47,text:"一般使用者 mark 想將程序編號 168 由優先權 0 改為 -10，請問下列敘述哪一項正確？",opts:["鍵入 nice -p 168 -n -10","鍵入 renice -10 168","使用者 mark 不能完成該變更","鍵入 renice -n -10 168"],ans:2,diff:"中",exp:"一般使用者只能降低自己的優先權（增加 nice value），不能提高。只有 root 可以設為負值。"},
+{id:48,text:"小王想查看 somefile 的相關資訊（如：檔案內容的類型），請問可以使用下列哪一個指令？",opts:["ls -ial somefile","find somefile","which somefile","file somefile"],ans:3,diff:"中",exp:"file 指令可以查看檔案的相關資訊，包含檔案類型。"},
+{id:49,text:"使用者登入後想設定環境變數 NAME=flowers，可以修改下列哪一個檔案？",opts:["/etc/profile","~/.bashrc","~/.login","/etc/bashrc"],ans:1,diff:"中",exp:"~/.bashrc 可以設定使用者的個別環境設定，僅對該使用者有效。"},
+{id:50,text:"MBR 分割區格式，最多支援到幾個「主分割區（Primary Partitions）」？",opts:["1","2","4","5"],ans:2,diff:"中",exp:"MBR 最多只能分割出 4 個主分割區，且無法使用超過 2TB 以上的硬碟。"},
+{id:51,text:"假設當前工作目錄是 /data2，若想將 /data1 內的所有檔案搬移到當前工作目錄，下列哪一個指令是能達到目標的最短指令？",opts:["mv /data1/. .","mv ../data1/. .","mv /data1/* .","mv /data1 /data2"],ans:2,diff:"易",exp:"(A)(B) 應為星號(*)。(D) 會將 /data1 目錄搬進 /data2。mv /data1/* . 為正確最短指令。"},
+{id:52,text:"王工程師想要將 data 目錄內所有子目錄與相關檔案複製到家目錄內的 data-backup，工作目錄在家目錄，請問下列哪一項指令可以達成？",opts:["cp -all data data-backup","cp -r /data/* /data-backup","cp -r data/* data-backup","cp -r ~/data/* ~data-backup"],ans:2,diff:"難",exp:"(A) -all 參數有誤。(B) data-backup 前多了 /。(D) data-backup 前需加 /。故 (C) 正確。"},
+{id:53,text:"若要將 /etc/fstab 檔案中記錄的檔案系統全數掛上去，應該使用下列哪一個指令？",opts:["mount -a","mount -f","mount -o","mount -t"],ans:0,diff:"中",exp:"mount -a 可掛載所有在 /etc/fstab 中的檔案系統。"},
+{id:54,text:"Peter 想要使用管理者身份修改 /etc/http/httpd.conf，但不想以管理者身份登入，請問可以使用下列哪一個指令？",opts:["su - root vim /etc/http/httpd.conf","sudo -u root vim /etc/http/httpd.conf","chroot vim /etc/http/httpd.conf","vim /etc/http/httpd.conf | sudo"],ans:1,diff:"中",exp:"sudo 可在不登入其他使用者的情況下，切換成該使用者並進行指令操作。"},
+{id:55,text:"下列哪一個檔案，記錄了系統目前真正掛載上的檔案系統？",opts:["/etc/ftab","/etc/fstab","/etc/mtab","/etc/mounttab"],ans:2,diff:"中",exp:"/etc/mtab 記錄當前系統已掛載的分割區，每次 mount/umount 時都會更新。/etc/fstab 是設定檔。"},
+{id:56,text:"若要新增一位員工為代理管理員但不想提供 root 密碼，可用哪一個指令讓使用者加入 wheel 群組？",opts:["chgrp -G wheel flowers","newgrp root flowers","groupmod root flowers","usermod -aG wheel flowers"],ans:3,diff:"中",exp:"usermod -aG wheel flowers 可讓使用者加入 wheel 群組。-a 表示附加（不移除原群組）。"},
+{id:57,text:"針對 ls -l test 所顯示的權限欄位，下列敘述哪一項錯誤？",opts:["若顯示 drwxr-xr-x，代表 test 是一個目錄","若顯示 brwx-r--x-，代表 test 是一般的裝置檔","若顯示 lrwxr-xr-x，代表 test 是一個連結 (link) 檔","若顯示 crwxr-xr-x，代表 test 是一個字元裝置檔"],ans:1,diff:"中",exp:"b 開頭代表區塊設備檔案（block device），而非「一般的裝置檔」。c 開頭才是字元裝置檔。"},
+{id:58,text:"關於 SELinux 策略各項規則布林值的敘述，下列哪一項錯誤？",opts:["指令 sudo getsebool -a 可以取得 SELinux 策略各項規則的布林值","指令 sudo setsebool -P 可以修改 SELinux 策略規則的布林值","指令 seinfo -a 可以列出 SELinux 的狀態、規則布林值等所有訊息","指令 sesearch 可以取得執行 SELinux 系統的各項狀態值"],ans:3,diff:"中",exp:"sesearch 用來搜尋 SELinux 政策規則，不是取得狀態值。取得狀態應使用 sestatus 或 getenforce。"},
+{id:59,text:"系統管理員遠端操作 Linux，若要通知目前跟他一起操作相同主機的所有人，可以使用下列哪一個指令？",opts:["tall \"Hello, please logout this system\"","cat \"Hello, please logout this system\"","logger \"Hello, please logout this system\"","wall \"Hello, please logout this system\""],ans:3,diff:"中",exp:"wall 指令可即時發送通知給同一部主機的所有使用者（限文字介面）。"},
+{id:60,text:"我們經常使用一個指令來顯示當前所在的工作目錄，下列哪一項最適當？",opts:["cd ..","pwd","ls -ial","cd ~"],ans:1,diff:"易",exp:"pwd（Print Working Directory）可用來印出當前的資料夾路徑。"},
+{id:61,text:"test.txt 內容為 1、22、22、1（共四行），執行 uniq -c test.txt 的輸出結果為？",opts:["只輸出 2（重複次數）","1 1\\n2 22","2 1\\n2 22","1 1\\n2 22\\n1 1"],ans:3,diff:"中",exp:"uniq 去除連續重複列。-c 顯示重複次數。1 出現 1 次、22 連續出現 2 次、1 出現 1 次，輸出：1 1、2 22、1 1。"},
+{id:62,text:"下列哪一個指令可以將 SELinux 設定為 enforcing mode？",opts:["sudo setenforce Enforcing","sudo setenforce Permissive","sudo getenforce Enforcing","sudo semanage Enforcing"],ans:0,diff:"中",exp:"setenforce Enforcing 將 SELinux 設定為強制模式（Permissive 為寬鬆模式，getenforce 是查詢）。"},
+{id:63,text:"下列哪一個指令可以檢查並且修復 Linux 檔案系統？",opts:["fsck","e2fsck","check","recovery"],ans:0,diff:"中",exp:"fsck 可以檢查並修復 Linux 檔案系統。e2fsck 僅用於 ext2/3/4 檔案系統的檢查。"},
+{id:64,text:"系統管理員可以修改該帳號的 shell 成為下列哪一個項目，以防止該帳號的登入？",opts:["/sbin/nologin","/sbin/onlogin","/sbin/outlogin","/sbin/loginout"],ans:0,diff:"中",exp:"/sbin/nologin 可以限制帳號的登入。"},
+{id:65,text:"Peter 想將 test.txt 分成三個欄位顯示在螢幕上，請問可以使用下列哪一個指令？",opts:["grep -v 3 test.txt","cut -d \" \" -f 3 test.txt","pr -3 test.txt","tail -f test.txt"],ans:2,diff:"中",exp:"pr -3 可以將文字檔內容分成多欄顯示。"},
+{id:66,text:"一般使用者 umask 預設值通常是下列哪一項？",opts:["022","002","222","020"],ans:1,diff:"中",exp:"一般使用者 umask 預設為 002；root 為 022。"},
+{id:67,text:"在 GRUB 中，磁碟機回報為 hd(0, 0)，它在檔案系統中的分割區名稱應該為？",opts:["/dev/hdb2","/dev/hda1","/dev/disk1","/dev/sda1"],ans:1,diff:"中",exp:"GRUB 中 hd(0,0) 代表第一顆硬碟的第一個分割區，在舊式 IDE 硬碟中對應 /dev/hda1。"},
+{id:68,text:"在 Linux 環境中在要執行的指令前加上下列哪一項，可以計算指令的執行時間？",opts:["time","times","clock","timespec"],ans:0,diff:"中",exp:"time 指令可以用來查看指令的執行時間（real、user、sys）。"},
+{id:69,text:"Linux 系統管理員若要查詢在新增使用者帳號時的預設參數，請問可以使用下列哪一個指令？",opts:["account -D","createuser -D","useradd -D","newuser -D"],ans:2,diff:"中",exp:"useradd -D 可以列出新增使用者時的預設值。"},
+{id:70,text:"下列哪一個指令可以顯示磁碟分割區 /dev/sda3 的詳細資訊，如 inode 數量、Block size、Backup superblock 位置？",opts:["df /dev/sda3","du /dev/sda3","fdisk -l /dev/sda3","dumpe2fs /dev/sda3"],ans:3,diff:"難",exp:"dumpe2fs 可用來查詢 Ext 家族的 inode 數量、Block size 與 Backup superblock 內容。"},
+{id:71,text:"關於 at 命令使用權限的敘述，下列哪一項錯誤？",opts:["若 /etc/at.allow 存在，則只有其中的使用者才可使用 at","若 /etc/at.allow 不存在而 /etc/at.deny 存在，則 /etc/at.deny 列出的使用者不能使用 at","若兩個檔案均不存在，則每一位使用者可以使用 at 命令","預設只有 /etc/at.deny 存在且內容為空，若要對使用者設限則將帳號加入其中"],ans:2,diff:"中",exp:"倘若兩個檔案均不存在，則只有 super user（root）可以使用 at 命令。"},
+{id:72,text:"下列哪一項不是使用 RPM 套件管理系統的優點？",opts:["無需自行編譯（compile）軟體","套件安裝時會記錄所有安裝檔案的名稱與目錄，方便未來移除","可以隨時查詢目前已經安裝的所有套件列表","所有安裝的軟體程式，都是以跨平台的方式進行，以利未來可以移轉"],ans:3,diff:"中",exp:"RPM 軟體僅能在 Linux 平台上使用，不具有跨平台功能。"},
+{id:73,text:"請問 rsyslogd 將紀錄送往其他電腦時，所使用的通訊埠為下列哪一項？",opts:["541","154","514","415"],ans:2,diff:"中",exp:"rsyslogd 使用 514/UDP 通訊埠來傳輸資料。"},
+{id:74,text:"小莉在 Ubuntu 插入命名為 MYDISK 的 USB 隨身碟後，在預設自動掛載狀況下，可透過哪一個路徑找到隨身碟上的報告？",opts:["cd /dev/MYDISK","cd /media/MYDISK","cd /media/lily/MYDISK","cd /dev/lily/MYDISK"],ans:2,diff:"中",exp:"插入 Ubuntu 系統中的 USB 隨身碟，預設會掛載到 /media/使用者帳號/USB隨身碟名稱。"},
+{id:75,text:"如果想在 Raspberry Pi 3B 上安裝 Ubuntu 來做物聯網應用，應從官網哪一個路徑取得安裝資料？",opts:["https://ubuntu.com/download/desktop","https://ubuntu.com/download/server","https://ubuntu.com/download/iot","https://ubuntu.com/download/cloud"],ans:2,diff:"中",exp:"iot 路徑即物聯網（Internet of Things）相關的下載頁面。"},
+{id:76,text:"關於 shell 中變數的敘述，下列哪一項錯誤？",opts:["變數在設值之前，並不需要宣告","變數命名時大小寫是有分別的","要提取一個變數的內容，我們必須在變數前加上 $ 字元","可以使用單引號來取得變數值"],ans:3,diff:"中",exp:"單引號無法取得變數值，取得變數值須在變數前面加上 $ 字元。雙引號可以展開變數，單引號不行。"},
+{id:77,text:"若要能夠利用一個 mkdir 指令就創建出多層的巢狀目錄，請問下列哪一個參數是執行 mkdir 所需要的？",opts:["-c","-d","-n","-p"],ans:3,diff:"易",exp:"mkdir -p 可以建立巢狀目錄，同時建立所有不存在的父目錄。"},
+{id:78,text:"關於以下 shell script（[ -e filename ] 判斷檔案存在），下列哪一項錯誤？",opts:["它檢查使用者輸入的檔案是否存在於當前工作目錄","如果檔案不存在則創建新檔案","如果檔案存在則覆蓋檔案","程序運行直到完成創建檔案"],ans:2,diff:"中",exp:"[ -e filename ] 表示如果 filename 存在則為真，檔案存在時不執行創建，不會覆蓋。"},
+{id:79,text:"關於 Linux Kernel module 的指令，下列哪一項錯誤？",opts:["指令 insmod 可以將指定 module 載入到 kernel","指令 addmod 可以將指定 module 載入到 kernel","指令 rmmod 可以將指定的 module 從 kernel 移除","建議使用 modprobe 指令替代 insmod 與 rmmod 指令"],ans:1,diff:"中",exp:"addmod 並非 Linux 指令。正確的指令是 insmod（載入）和 rmmod（移除）。"},
+{id:80,text:"駭客刪除了 /var/log/messages 後，需要最快產生一個新的空白檔案，請問最快的做法是？",opts:["less /var/log/messages","touch /var/log/messages","cat /var/log/messages","more /var/log/messages"],ans:1,diff:"難",exp:"touch 指令在檔案不存在時可以產生空白檔案，也可以修改現有檔案的時間戳記。"},
+{id:81,text:"系統管理員宣告了 a=1、b=2 兩個環境變數，請問下列哪一個指令可以正確地比較兩個整數變數是否相等？",opts:["[ a == b ]","test a -eq b","test $a == $b","[ $a -eq $b ]"],ans:3,diff:"易",exp:"[ $a -eq $b ] 比較兩個整數是否相符，相符回傳 0，否則為 1。-eq 用於整數比較。"},
+{id:82,text:"在 shell 終端機中，下列哪一個指令執行後「不」會立刻返回到個人的家目錄（home directory）？",opts:["cd $HOME","cd /home","cd ~","cd"],ans:1,diff:"中",exp:"cd /home 切換到 /home 目錄，不是個人家目錄。$HOME、~、cd 不帶參數都會回到自己的家目錄。"},
+{id:83,text:"下列哪一個指令可以取得 bash 的 PID？",opts:["pgrep bash","jobs bash","ps bash","exit bash"],ans:0,diff:"中",exp:"pgrep 可給定模板找出所有匹配的程序並列出 PID。"},
+{id:84,text:"系統管理員發現時間錯誤想要立即修正，請問可以使用下列哪一個指令（設定為 2022-09-29 05:11:12）？",opts:["setdate \"2022-09-29 05:11:12\"","date -u 092905112022.12","date -u 20220929051112","time 20220920051112"],ans:1,diff:"難",exp:"date 格式：[-u] [MMDDhhmm[[CC]YY][.ss]]，-u 設定 UTC 時間，格式為月日時分年.秒。"},
+{id:85,text:"關於設定檔案具 SUID 權限的指令，下列哪一項正確？",opts:["chmod 6755 /tmp/test","chmod 1755 /tmp/test","chmod u+s /tmp/test","chmod g+s /tmp/test"],ans:2,diff:"中",exp:"SUID 位值為 4000，可用 u+s 方式設定。chmod 6755 設定的是 SUID+SGID，chmod 1755 是 Sticky Bit。"},
+{id:86,text:"下列哪一個指令可以更新媒體庫清單？",opts:["sudo apt update","sudo apt renew","sudo apt upgrade","sudo apt replace"],ans:0,diff:"中",exp:"sudo apt update 更新套件庫清單（package list）；upgrade 才是升級已安裝套件。"},
+{id:87,text:"若要將某設定檔內的主機名稱從 host1 改為 host2，應使用下列哪一個指令？",opts:["sed -e 's/host1/host2/g' host1.conf > host2.conf","grep 'host1' host1.conf > host2.conf","awk {print $1} host1.conf > host2.conf","cat host1.conf > host2.conf"],ans:0,diff:"中",exp:"sed -e 's/host1/host2/g' 可替換檔案內的特定文字，/g 表示全域替換。"},
+{id:88,text:"Linux 系統管理員若想得知群組的成員名單，可以查詢下列哪一個檔案內容？",opts:["/etc/group","/etc/passwd","/etc/group.conf","/etc/passwd.conf"],ans:0,diff:"中",exp:"/etc/group 記錄群組資訊，包含群組名稱、GID 和群組成員。"},
+{id:89,text:"在 crontab 中撰寫下列哪一項指令，就可以在每個星期五早上 11:30 系統自動打包備份 /data 資料夾？",opts:["* 30 11 * 5 /bin/tar czvf data.tar.gz /data","30 11 * * 5 /bin/tar czvf data.tar.gz /data","30 11 * * 5 tar czvf data.tar.gz /data","* 30 11 * 5 tar czvf data.tar.gz /data"],ans:1,diff:"中",exp:"crontab 格式：分 時 日 月 週。30 11 * * 5 表示每週五 11:30，需使用絕對路徑。"},
+{id:90,text:"下列哪一項目錄的內容在機器關機後不會保存？",opts:["/tmp","/var","/dev","/proc"],ans:3,diff:"中",exp:"/proc 是虛擬檔案系統（pseudo filesystem），機器關機後內容會消失，存放的是核心與程序的動態資訊。"},
+{id:91,text:"系統管理員利用 root 身份登入，想要替帳號「flower」修改密碼，請問可以使用下列哪一個指令？",opts:["passwd","password flower","chpassword flower:a123456","passwd flower"],ans:3,diff:"中",exp:"管理者修改一般使用者密碼時，使用 passwd 後面加上使用者帳號。"},
+{id:92,text:"如何找到 USB 隨身碟的裝置名稱並掛載到 /media/usb？",opts:["用 lsusb 找到名字是 /dev/sdb1，然後用 mount /dev/sdb1 /media/usb 掛載","用 lsblk 找到名字是 /dev/sdb1，然後用 mount /dev/sdb1 /media/usb 掛載","用 lsusb 找到名字是 /dev/sdb1，然後用 usbmount /dev/sdb1 /media/usb 掛載","用 lsblk 找到名字是 /dev/sdb1，然後用 usbmount /dev/sdb1 /media/usb 掛載"],ans:1,diff:"中",exp:"lsblk 找出裝置名稱，mount 掛載。lsusb 顯示 USB 硬體資訊，usbmount 不是標準指令。"},
+{id:93,text:"若要將文字檔 test.txt 的內容轉成 8 進位的內容，請問可以使用下列哪一個指令？",opts:["if -d test.txt","dd -a test.txt","rev -d test.txt","od -b test.txt"],ans:3,diff:"中",exp:"od 可將指定檔案轉換成不同格式輸出，-b 表示轉換成八進制（Octal）格式。"},
+{id:94,text:"將 /opt/share 指定給 cars 群組上傳與分享用，可用哪個指令？",opts:["chgrp cars /opt/share | chmod 775 /opt/share","chgrp cars /opt/share; chmod 2770 /opt/share","chown cars /opt/share; chmod 1777 /opt/share","chmod 1777 /opt/share | chown cars /opt/share"],ans:1,diff:"中",exp:"chgrp 將目錄轉為指定群組使用，chmod 2770 設定 SGID 讓群組成員可以共享使用。"},
+{id:95,text:"目前運行前景的程序 prog（PID 1234），不接受 int、quit 與 stop 信號但可接受 term 信號，最佳的結束方式為？",opts:["先按 [Ctrl]+/，然後鍵入 kill -9 1234","開啟另一個 console，然後鍵入 killall 1234","開啟另一個 console，然後鍵入 killall prog","先用 su 切換為管理員，然後鍵入 kill -9 prog"],ans:2,diff:"中",exp:"killall prog 發送 SIGTERM（預設信號）給名稱為 prog 的程序。由於程序接受 term 信號，這是最佳方式。"},
+{id:96,text:"關於 RAID 5 磁碟陣列，下列敘述哪一項正確？",opts:["至少得 3 顆實體硬碟以上（含），才能實作得出來","若使用 4 顆 4TB 的硬碟組成 RAID 5，最後總容量為 8 TB","使用 RAID 5，就算壞掉 2 顆硬碟也救得回來","組成 RAID 5 的硬碟一定要相同廠牌與容量，否則無法實作"],ans:0,diff:"中",exp:"RAID 5 至少需要 3 顆硬碟。4顆4TB 的 RAID 5 總容量為 (4-1)×4 = 12TB。RAID 5 只能容許 1 顆硬碟故障。"},
+{id:97,text:"關於 symbolic link 的敘述，下列哪一項錯誤？",opts:["創建某個檔案的 symbolic link，實際上會產生新的檔案名稱並指向原來的檔案內容，兩個檔案擁有相同的 inode address","改變原始檔案內容時，由 symbolic link 創建的檔案也會看到新的內容","刪除原始檔案後，透過 symbolic link 創建的檔案就無法繼續讀取","隨時可以針對目錄與檔案建立必要的 symbolic link"],ans:0,diff:"易",exp:"(A) 是 hard link 的特性。symbolic link 擁有個別的 inode，與原始檔案 inode 不同。"},
+{id:98,text:"如果要針對某幾個檔案系統啟動檔案配額（quota），需要修改下列哪一個檔案？",opts:["/etc/ftab","/etc/fstab","/etc/qtab","/etc/quotatab"],ans:1,diff:"中",exp:"/etc/fstab 可在 options 欄位新增 usrquota 來啟動檔案配額。"},
+{id:99,text:"關於 swap 交換空間，下列敘述哪一項錯誤？",opts:["Linux 在實體記憶體不足時，系統會透過 swapping 動作將 swap 的資料搬到預先配置好的 pages","在建立好磁碟分割區 /dev/sda2 後，使用 sudo mkswap /dev/sda2 來初始化交換空間","在建立好交換空間 /dev/sda2 後，使用 sudo swapon /dev/sda2 指令啟用新的交換空間","要停用交換空間 /dev/sda2，可以使用 sudo swapoff /dev/sda2 指令"],ans:0,diff:"中",exp:"實體記憶體不足時，系統把 page 的資料搬到 swap（硬碟）。(A) 說反了，是把 RAM 中的 page 搬到 swap，不是把 swap 搬到 pages。"},
+{id:100,text:"若不希望 vgscan 去掃描特定裝置，可以在下列哪一個檔案中設定「過濾器（Filters）」？",opts:["lvm.conf","vg.conf","vgscan.conf","lv.cfg"],ans:0,diff:"中",exp:"LVM 的組態設定都在 lvm.conf 檔案中，可以設定過濾器排除特定裝置。"},
+{id:101,text:"下列哪一個檔案包含網域搜索列表以及本地機器，用於主機名解析的名稱伺服器？",opts:["/etc/hosts","/etc/network/interfaces","/etc/resolv.conf","/etc/services"],ans:2,diff:"中",exp:"/etc/resolv.conf 包含網域搜索列表和用於主機名解析的名稱伺服器（nameserver）設定。"},
+{id:102,text:"目錄 dir1 的權限設定為 766，若要改為檔案擁有者可讀寫執行，其餘可讀，可使用下列哪一項指令？",opts:["chmod 744 dir1","chmod go-rw dir1","chmod 722 dir1","chmod o+x ug-w dir1"],ans:0,diff:"中",exp:"chmod 744（rwxr--r--）直接覆蓋設定，或使用 go-w 去除 group 和 others 的寫入權限。"},
+{id:103,text:"程式碼中有 break 和 continue，外層迴圈 i=1~3，內層 j=1~5（continue 跳過 j=3，i=3 時 break），會產生幾行的輸出？",opts:["8","14","15","3"],ans:1,diff:"中",exp:"i=1：輸出 j=1,2,4,5 和 i=1（5行）；i=2：同樣（5行）；i=3：輸出 j=1,2,4,5 但由於 i=3 跳脫外迴圈（4行）。總計 5+5+4=14 行。"},
+{id:104,text:"下列哪一個指令可以查詢特定的 package 是否已經安裝？",opts:["rpm -q ssh","rpm -v ssh","rpm -k ssh","rpm -l ssh"],ans:0,diff:"中",exp:"rpm -q 用來查詢套件是否已經安裝（query）。"},
+{id:105,text:"下列哪一個命令只有顯示當前目錄（不包含其子目錄）的總使用量？",opts:["df -s ./","du -s ./","df -s","du -sS"],ans:3,diff:"難",exp:"du -s 呈現總用量；-S 指定不計算子資料夾的空間使用量（separate-dirs）。df 用來呈現磁碟空間使用量，無法呈現單一目錄。"},
+{id:106,text:"系統管理員操作了幾個指令，並且全部都移到背景執行，若要查看背景執行中的指令，下列哪一項正確？",opts:["bg","fg","jobs","kill"],ans:2,diff:"難",exp:"jobs 指令可以查詢背景執行中的指令。bg 將暫停程序移到背景，fg 將程序移到前景。"},
+{id:107,text:"假如你需要將當前目錄內所有檔案改名，讓每個檔案名稱最後都額外加上 .bak，請問可以使用下列哪一個指令？",opts:["mv * *.bak","for $i in *; do mv $i $i.bak; done","for i in *; do mv i i.bak; done","for i in *; do mv $i $i.bak; done"],ans:3,diff:"易",exp:"使用 for...in 搭配 $i 取得變數值。(B) 變數宣告不用 $。(C) 少了 $ 取不到變數值。"},
+{id:108,text:"關於單引號和雙引號的差異，sh=bash，輸出 '$sh' \"$sh\" '$sh' \"$sh\" 的結果為？",opts:["$sh bash $sh $sh","$sh bash $sh $sh","$sh bash bash $sh","$sh bash bash bash"],ans:3,diff:"中",exp:"單引號保留所有字面值（$sh→$sh），雙引號除了 $ ` \\ 之外保留字面值（\"$sh\"→bash）。"},
+{id:109,text:"編寫 crontab 的方式，下列哪一項正確？",opts:["vi crontab","crontab -l","crontab -r","crontab -e"],ans:3,diff:"中",exp:"crontab -e 開啟編輯器撰寫 crontab 檔案。-l 列出、-r 刪除、不應直接用 vi 編輯。"},
+{id:110,text:"若要快速將多個檔案合併成一個，文字逐行合併，請問可以使用下列哪一個指令？",opts:["paste -d \"\\n\" -s file1 file2 file3 > file4","copy file1 file2 file3 > file4","mv file1 file2 file3 > file4","touch file1 file2 file3 > file4"],ans:0,diff:"中",exp:"paste 可將不同檔案內容匯成一個，-d 指定分割字元，-s 逐個檔案貼上（sequential）。"},
+{id:111,text:"請問包含系統中處理程序及執行緒的相關狀態資訊，會在下列哪一項目錄下？",opts:["/lib","/proc","/var","/usr"],ans:1,diff:"中",exp:"/proc 包含系統中處理程序及執行緒的相關狀態資訊（虛擬檔案系統）。"},
+{id:112,text:"關於程序優先權的敘述，下列哪一項錯誤？",opts:["NI 值越高優先權越低，反之則越高","PRI 值由 Kernel 動態調整，但 NI 值則需要使用者或管理員調整","NI 的取值範圍是 -19 到 20 之間，若不指定，預設為 0","管理員可以用一個單一的指令，將某一使用者所有程序之 NI 值作重新的安排"],ans:2,diff:"中",exp:"NI 的取值範圍是 -20 到 19 之間（不是 -19 到 20），預設為 0。"},
+{id:113,text:"下列哪一個指令可以更新系統或軟體？",opts:["sudo apt update","sudo apt renew","sudo apt upgrade","sudo apt replace"],ans:2,diff:"中",exp:"sudo apt upgrade 更新系統中已安裝的套件到最新版本。apt update 僅更新套件列表。"},
+{id:114,text:"當系統非常有規律地定期執行某一程式時，相關的設定可能存放在什麼地方？",opts:["/etc/cron","/etc/crontab、/var/spool/cron","/var/spool/crontab","/var/crontable"],ans:1,diff:"中",exp:"/etc/crontab 為主要 crontab 系統檔案，/var/spool/cron 存放使用者定義的 crontab 檔案。"},
+{id:115,text:"關於 mv 指令的功能說明，不包含下列哪一項？",opts:["搬移檔案到不同路徑","複製檔案到不同路徑","搬移既有的目錄","更改檔案名稱"],ans:1,diff:"易",exp:"mv 可以搬移檔案與目錄，也可以更改檔案名稱，但沒有複製（cp）或刪除（rm）的功能。"},
+{id:116,text:"關於系統程序的敘述，下列哪一項錯誤？",opts:["每一支正在執行的程式，對系統而言都是一支程序","系統會針對每一支程序予以編號，稱為 PID","系統內所有正在執行的相同程式，都會被賦予相同的 PID","系統開機時所執行的所有 Daemon 程式，也都會被賦予 PID"],ans:2,diff:"中",exp:"相同程式的多個執行實例（instance）會被賦予不同的 PID。"},
+{id:117,text:"請問下列哪一個不是 iptables 的 table？",opts:["filter","nat","mangle","table"],ans:3,diff:"中",exp:"iptables 的 table 有：filter、nat、mangle、raw、security。'table' 不是 table 名稱。"},
+{id:118,text:"使用 System V init 時，下列哪一項是 Linux 核心在開機啟動的第一個程序？",opts:["/boot/init","/etc/rc.d/rcinit","/proc/sys/kernel/init","/sbin/init"],ans:3,diff:"中",exp:"Linux 核心在完成初始化後，執行用戶空間的第一個程序 /sbin/init（PID 為 1）。"},
+{id:119,text:"針對 SUID/SGID/SBIT 特殊權限，chmod 4755 設定 test1，chmod 1754 設定 dir1，下列敘述哪一項正確？",opts:["第一個空格應顯示 -rwsr-xr-x，因為 test1 設 SUID","第一個空格應顯示 -rwSr-xr-x，因為 test1 設 SUID","第二個空格應顯示 drwxr-xr-t，因為 dir1 設 SBIT","第二個空格應顯示 drwxr-xr-x，因為 dir1 設 SBIT"],ans:0,diff:"中",exp:"4755 = SUID + rwxr-xr-x，Owner 有 x 所以 s 為小寫 → -rwsr-xr-x。1754 = SBIT + rwxr-xr--，Others 無 x 所以 t 為大寫 T → drwxr-xr-T。"},
+{id:120,text:"在 Ubuntu 系統上，下列哪一個檔案包含本地機器的主機名？",opts:["/etc/HOSTS","/etc/hosts","/etc/HOSTNAME","/etc/hostname"],ans:3,diff:"中",exp:"Ubuntu 使用 /etc/hostname 記錄本地機器主機名（Linux 檔案系統大小寫有別）。"},
+{id:121,text:"機箱蓋內只有一顆硬碟，與主機板上第一個 IDE 磁碟控制器相連，該磁碟機在 Linux 的裝置名稱為？",opts:["/dev/sd0","/dev/sda","/dev/hd0","/dev/hda"],ans:3,diff:"中",exp:"IDE 硬碟的裝置名稱為 /dev/hda（第一顆）。/dev/sda 是 SCSI/SATA 硬碟的名稱。"},
+{id:122,text:"在 Linux 中，下列哪一個指令無法在系統中增加新用戶？",opts:["useradd","adduser","linuxconf","insert"],ans:3,diff:"中",exp:"insert 指令並不存在。useradd 和 adduser 都可以新增使用者，linuxconf 是舊式設定工具。"},
+{id:123,text:"Peter 想查看 /etc/passwd 檔案的格式編排以及各欄位代表的意義，請問可以使用下列哪一個指令？",opts:["man 5 passwd","man passwd","info passwd","cat passwd"],ans:0,diff:"易",exp:"man page 第 5 項分類文件為檔案格式文件，man 5 passwd 顯示 passwd 檔案格式說明。"},
+{id:124,text:"下列哪一項指令可以把一個正在執行的程序立即移除？",opts:["kill -2","kill -9","kill -HUP","kill -15"],ans:1,diff:"中",exp:"SIGKILL (9) 是最強的信號，無法被程序攔截或忽略，立即強制終止。"},
+{id:125,text:"下列哪一個指令可以啟動並且增加一組新的 SWAP 分割區？",opts:["addswap /dev/","enableswap /dev/","mkswap /dev/","swapon /dev/"],ans:3,diff:"中",exp:"swapon 啟用交換空間，swapoff 停用。mkswap 是初始化交換空間，不是啟動。"},
+{id:126,text:"bash 中比較字串：$str1 = \"$str2\"（相等），\"$str1\" == \"$str2\"（相等），-n \"$str1\"（長度不為0）。輸出結果為？",opts:["1","2","3","4"],ans:3,diff:"中",exp:"根據三個條件的判斷結果累加或組合，答案為 4。"},
+{id:127,text:"系統管理員操作完 Linux 後，想要清除操作的歷史記錄，請問可以利用下列哪一個指令？",opts:["history -c","kill history","history -h","history -l"],ans:0,diff:"中",exp:"history -c 清除所有操作記錄。-l 無此參數，-h 無此參數。"},
+{id:128,text:"某一使用者取得管理員帳號後，若要查看自己密碼的加密方式，可以利用下列哪一個檔案？",opts:["/etc/shadow.conf","/etc/gshadow.conf","/etc/shadow","/etc/gshadow"],ans:2,diff:"中",exp:"/etc/shadow 檔案內的第二個欄位記錄密碼的加密方式（包含加密演算法類型）。"},
+{id:129,text:"管理員想利用指令將 ubuntu.iso 分割成每份最大 100MB 後上傳至 FTP，請問可以使用下列哪一個指令？",opts:["cut -b 100M ubuntu.iso \"ubuntu.iso.part\"","split -b 100M ubuntu.iso \"ubuntu.iso.part\"","trim -b 100M ubuntu.iso \"ubuntu.iso.part\"","cp -b 100M ubuntu.iso \"ubuntu.iso.part\""],ans:1,diff:"中",exp:"split 可以將大型檔案等份分割，-b 指定大小，支援 K、M、G、T 等單位。"},
+{id:130,text:"下列哪一個指令是用於除錯 shell 腳本程序？",opts:["debug","dbg","set","set -x"],ans:3,diff:"中",exp:"set -x 開啟除錯模式，執行時每個語句都會列印到 shell。set -n 不執行只檢查語法。"},
+{id:131,text:"關於設定目錄具 Sticky Bit 權限的指令，下列哪一項正確？",opts:["chmod 4755 /public","chmod 775 /public","chmod u+t /public","chmod o+t /public"],ans:3,diff:"中",exp:"Sticky Bit 位值為 1000，可用 o+t 方式設定（也可用 +t）。chmod 4755 是 SUID。"},
+{id:132,text:"下列哪一個檔案包含目前「已掛載」檔案系統名稱、掛載點等資訊？",opts:["/tmp/files","/etc/filesystems","/etc/mtab","/etc/fstab"],ans:2,diff:"中",exp:"/etc/mtab 記錄當前已掛載的檔案系統，/etc/fstab 是開機時應掛載的設定。"},
+{id:133,text:"小王忘記昨天下載的 php-8.1.13.tar.gz 放在哪個目錄，應利用哪一個指令尋找？",opts:["find . php*.tar.gz","find / -name php*.tar.gz -mtime -2","updatedb; locate -name php*.tar.gz","whereis php*.tar.gz"],ans:1,diff:"中",exp:"find / -name php*.tar.gz -mtime -2 從根目錄搜尋，限制在 2 天內修改的檔案。locate 沒有 -name 參數，whereis 只搜尋特定目錄。"},
+{id:134,text:"系統管理員想要知道她編寫的 hello.txt 總共有多少字元，應該使用下列哪一個指令？",opts:["wc -l hello.txt","wc -d hello.txt","wc -k hello.txt","wc -m hello.txt"],ans:3,diff:"難",exp:"wc -m 統計檔案的字元數（character count）。-l 統計行數，-w 統計字數。"},
+{id:135,text:"關於 rsync 與 btrfs 備份類型的敘述，下列哪一項錯誤？",opts:["儲存 btrfs 備份檔案的磁碟空間，必須是一個獨立的分割區","rsync 備份的來源與目的磁碟空間，可以使用不同的檔案系統","rsync 只會另存有變動的檔案，沒變動的以 hard link 儲存節省空間","btrfs 可以將備份檔案另存至外部或遠端磁碟機以保障資料安全"],ans:3,diff:"中",exp:"btrfs 只支援本地磁碟，不支援外部或遠端磁碟機，這是 btrfs 快照的限制。"},
+{id:136,text:"下列哪一個指令可以直接更新既有檔案的存取日期或產生空的全新檔案？",opts:["more","touch","tail","cat"],ans:1,diff:"難",exp:"touch 可以創建空的新檔案，也可以更新現有檔案的修訂日期（時間戳記）。"},
+{id:137,text:"若要調查 Linux 作業系統上所產生的警告訊息記錄，過濾所有帶有 warn 的訊息，請問可以使用下列哪一個指令？",opts:["echo /var/log/messages","cat /var/log/audit/audit.log","grep root /var/log/nginx/access.log","egrep warn /var/log/messages"],ans:3,diff:"難",exp:"egrep 支援擴展正規表達式，可利用關鍵字過濾檔案內容並輸出含 warn 的訊息。"},
+{id:138,text:"小王工程師想利用 cpio 備份目前工作目錄內（含子目錄）的所有 php 檔案，請問可以使用下列哪一個指令？",opts:["ls *.php | cpio -ov -F my_php.cpio","find *.php | cpio -ov > my_php.cpio","find . -name '*.php' -print | cpio -ov -F my_php.cpio","find . -name '*.php' -print | cpio -v > my_php.cpio"],ans:2,diff:"易",exp:"需搭配 find 從目前目錄搜尋，-o 是備份模式，-v 顯示過程，-F 指定輸出檔案。(D) 少了 -o 參數。"},
+{id:139,text:"下列哪一個指令可以建立 ext4 檔案系統？",opts:["sudo mke2fs -j /dev/sda1","sudo mke2fs -t ext4 /dev/sda1","sudo mkfs -j /dev/sda1","sudo mkfs -t ext4 /dev/sda1"],ans:1,diff:"中",exp:"mke2fs 可建立 ext2/ext3/ext4 檔案系統，-t 指定類型。-j 是舊式建立 ext3 的方式，但使用 mke2fs 而非 mkfs。"},
+{id:140,text:"若 Linux 系統管理員授予某一使用者可以使用部份的指令，以協助管理員進行管理工作，請問應設定下列哪一個檔案？",opts:["/etc/profile","/etc/passwd","/etc/sudoers","/etc/nologin"],ans:2,diff:"中",exp:"/etc/sudoers 可以針對個別指令設定授權給特定使用者（使用 visudo 編輯）。"},
+{id:141,text:"下列哪一個字元的運用，可使 Shell 指令換行但不執行？",opts:["\\","|","&","@"],ans:0,diff:"中",exp:"在指令過長時，可以利用 \\ 進行指令換行，讓 shell 繼續讀取下一行為同一指令。"},
+{id:142,text:"當函式內部沒有指定任何函式的回傳值時，它會回傳什麼？",opts:["無回傳值","0","最後執行命令的退出狀態","-1"],ans:2,diff:"中",exp:"bash 函式沒有 return 時，會回傳最後執行命令的退出狀態（exit status）。"},
+{id:143,text:"下列哪一個指令可以檢查 Linux ext2/ext3/ext4 檔案系統？",opts:["dumpfs","e2fsck","mkfs","tune2fs"],ans:1,diff:"中",exp:"e2fsck 可以檢查 ext2/ext3/ext4 檔案系統。fsck 是通用指令，tune2fs 是調整參數，mkfs 是格式化。"},
+{id:144,text:"可以使用下列哪一個指令查詢目前磁碟已經使用空間或剩餘空間，並且以較為適合閱讀的方式呈現？",opts:["du -f","df -i","df -h","du -l"],ans:2,diff:"中",exp:"df 呈現磁碟空間使用量，-h（human-readable）以適合閱讀的方式呈現（如 GB、MB）。"},
+{id:145,text:"下列哪一個指令可以查詢 systemd journal 的所有內容？",opts:["journalctl -a","journalctl -f","journalctl -k","journalctl -u"],ans:0,diff:"中",exp:"journalctl -a 印出所有欄位，包含非可列印字元。-f 追蹤新訊息，-k 只顯示核心訊息，-u 指定 unit。"},
+{id:146,text:"tar 指令中，查看 comsap.tar 壓縮檔內部是否包含 data/comm.conf 檔案的參數是？",opts:["將 data/comm.conf 加入壓縮檔 comsap.tar 內部","創建一個新的壓縮檔 comsap.tar，其內部只有 data/comm.conf","從 comsap.tar 壓縮檔解出 data/comm.conf 檔案","查看 comsap.tar 壓縮檔內部是否有包含 data/comm.conf 檔案"],ans:3,diff:"中",exp:"tar -t 參數是列出壓縮檔案內的檔案清單（List），可限制只列出指定的完整檔名。"},
+{id:147,text:"在函式 func 中，unset 刪掉區域變數 x 後，外部全域變數 x 的值為何（原 x=1，func 中 local x; unset x 後重設）？",opts:["1","2","3","程式執行錯誤"],ans:0,diff:"中",exp:"在函式中，unset 刪掉的是區域變數，不影響外部的全域變數 x（仍為 1）。"},
+{id:148,text:"關於 kill 指令的敘述，下列哪一項錯誤？",opts:["kill -9 11251 代表傳送 SIGKILL 給 PID 11251","如果沒有特別指定 signal value，當執行 kill 11251 時，系統會預設傳送 signal value 1 給 PID 11251","所有 signal 的定義皆可透過 kill -l 查閱","kill 指令的真正含意為傳送 signal 給某一正在執行的程序"],ans:1,diff:"中",exp:"若沒有指定信號，kill 預設傳送 SIGTERM（15），不是 signal value 1（SIGHUP）。"},
+{id:149,text:"小華想要利用 Bash Shell 的指令來進行兩個數字的相加，請問下列哪一項是正確的宣告方式？",opts:["int A=1,B=2","declare -i A=1,B=2","Integer $A=1,$B=2","Double #A=1,#B=2"],ans:1,diff:"中",exp:"bash 中宣告整數變數需使用 declare -i（integer），且不需要 $ 前綴和型別名稱。"},
+{id:150,text:"下列哪一個指令可以使用 dpkg 套件移除套件與設定檔案？",opts:["dpkg -r hdparm","dpkg -l hdparm","dpkg -i hdparm","dpkg -P hdparm"],ans:3,diff:"中",exp:"dpkg -r（remove）刪除套件但不刪設定檔；-P（purge）刪除套件與設定檔；-i 安裝；-l 列出。"},
+{id:151,text:"某一使用者被授權管理一個 Linux 群組，若要得知群組的成員，可以利用下列哪一個檔案？",opts:["/etc/shadow.conf","/etc/gshadow.conf","/etc/shadow","/etc/gshadow"],ans:3,diff:"中",exp:"/etc/gshadow 可以查看群組的成員（包含群組管理員和成員帳號）。"},
+{id:152,text:"系統管理員想要查詢系統中有哪些以 root 為名的帳號，可以使用下列哪一個指令？",opts:["cat /etc/passwd | head -n root","tac /etc/passwd | tail -n 5","grep \"^root\" /etc/passwd","sed \"/root/g\" /etc/passwd"],ans:2,diff:"易",exp:"grep \"^root\" 搜尋以 root 開頭的行（^ 代表行首），可找出帳號名稱為 root 的記錄。"},
+{id:153,text:"開發專案中有一個重要的參數檔案 comm.cnf 不可以被任何使用者刪除、修改或寫入，請問管理員可以執行哪一項指令達成目標？",opts:["chmod o-w comm.cnf","chmod 644 comm.cnf","chattr +i comm.cnf","chattr +a comm.cnf"],ans:2,diff:"中",exp:"chattr +i 設定 immutable 屬性，無法被更改檔名、修改內容或刪除，即使 root 也無法（除非移除屬性）。"},
+{id:154,text:"關於 SELinux 解決 permission denied 問題的敘述，下列哪一項錯誤？",opts:["指令 ls -ilZ 可以檢查 SELinux 檔案權限","最前面的 rwx 使用指令 chmod 修改","中間的 owner、group 可以使用指令 chown、chgrp 修改","指令 sudo chse 可以變更 SELinux 檔案權限"],ans:3,diff:"中",exp:"變更 SELinux 檔案 context 應使用 chcon 指令，chse 不存在。"},
+{id:155,text:"下列哪一項指令可以顯示背景執行的工作，並且列出對應執行的 ID？",opts:["jobs -t","jobs -l","jobs -","jobs -s"],ans:1,diff:"中",exp:"jobs -l 提供每一個工作更多的訊息，包含 PID 和工作 ID。"},
+{id:156,text:"請問在下列哪一種情況下，無法創建 hard link？",opts:["要創建的 hard link 與原始檔案是同屬相同實體的檔案系統","要創建的 hard link 的來源是隱藏檔案","要創建的 hard link 的來源是目錄","要創建的 hard link 的來源是設備檔案"],ans:2,diff:"易",exp:"創建 hard link 時，不可跨越檔案系統，且無法針對目錄建立 hard link。"},
+{id:157,text:"小王在家目錄建立了 apache 目錄的 symbolic link，後來 /opt/apache2 被改名為 /opt/apache2.4，請問下列敘述哪一項正確？",opts:["當小王執行 cd ~/apache2 仍然可以正常切換目錄","當小王執行 cd ~/apache2 會發生找不到目錄/檔案的錯誤訊息","小王不需要刪除 symbolic link，可以再次利用原來的指令讓它指向新的目錄名稱","小王不需要刪除 symbolic link，加參數 -v 讓 symbolic link 更新後指向新的目錄名稱"],ans:1,diff:"易",exp:"symbolic link 是指向特定路徑，原始路徑改名後 symbolic link 就會失效，出現找不到的錯誤。"},
+{id:158,text:"下列哪一個指令，無法建立任何磁碟分割區？",opts:["fdisk","gdisk","parted","fsck"],ans:3,diff:"中",exp:"fsck 是用於檢查和修復檔案系統的工具，與建立分割區無關。"},
+{id:159,text:"在 Linux 硬碟分區 hda2 中，a 代表下列哪一項？",opts:["第一個硬碟","第一個分區","第二個硬碟","第二個分區"],ans:0,diff:"中",exp:"hda 中：h 代表 IDE 介面，d 代表 disk，a 代表第一個硬碟，2 代表第二個分割區。"},
+{id:160,text:"若要查詢自己的帳號有加入哪些群組，請問可以使用下列哪一個指令？",opts:["who","charg","chmod","id"],ans:3,diff:"難",exp:"id 可以查詢自己的 uid、gid 以及所有群組名稱（groups）。"},
+{id:161,text:"系統管理員想要取得目前所有群組的編號，並且由小至大排序，請問可以使用下列哪一個指令？",opts:["nl /etc/group | sed -d \":\" -f 2 | sort -n","cat /etc/group | sort -n","cut -d \":\" -f3 /etc/group | sort -n","tac /etc/group | sort -n"],ans:2,diff:"易",exp:"cut -d \":\" -f3 提取 /etc/group 的第三欄（GID），sort -n 以數字排序。"},
+{id:162,text:"若想將某一個在前景執行的程序放到背景，使用者無法取得 Shell 控制權，下列哪一項操作可以達成目的？",opts:["先使用 [Ctrl]+c，然後使用 background 指令","先使用 [Ctrl]+c，然後使用 bg 指令","先使用 [Ctrl]+z，然後使用 background 指令","先使用 [Ctrl]+z，然後使用 bg 指令"],ans:3,diff:"中",exp:"Ctrl+Z 暫停（suspend）前景程序，bg 將暫停的工作移到背景繼續執行。"},
+{id:163,text:"在 Linux 系統上為數據儲存而新建新分區時，不會用到下列哪一個指令？",opts:["fdisk","format","mkfs","mount"],ans:1,diff:"中",exp:"Linux 中沒有 format 指令（那是 Windows 的）。分割區流程：fdisk→mkfs→mount。"},
+{id:164,text:"請問 rsyslogd 將紀錄送往其他電腦時，所使用的通訊協定為下列哪一項？",opts:["ICMP","IP","TCP","UDP"],ans:3,diff:"中",exp:"rsyslogd 使用 514/UDP 通訊埠（也可設定為 TCP）傳輸資料，預設為 UDP。"},
+{id:165,text:"下列哪一個指令可以查詢 foobar 套件的全部檔案安裝清單？",opts:["dpkg -l foobar","dpkg -L foobar","dpkg -ql foobar","dpkg -q --allfiles foobar"],ans:1,diff:"中",exp:"dpkg -L（大寫 L）列出套件安裝的所有檔案清單。-l（小寫）顯示套件資訊。"},
+{id:166,text:"關於 block device 敘述，下列哪一項錯誤？",opts:["block device 以隨機存取方式存取固定大小的 block，例如硬碟","block size 是由 Kernel 定義的，常見的有 512 byte、1 kilobytes、4 kilobytes","lsblk 指令不加任何參數，就可以列出所有的 block device，其中包括 empty device 與 RAM disk device","sudo blkid 指令可以列出所有 block device 的檔案類型、Volume Label、UUID 等訊息"],ans:2,diff:"中",exp:"lsblk 預設不會列出 empty device，需加上 -a 參數才會列出所有 device。"},
+{id:167,text:"下列哪一項不是常見的多重開機管理程式？",opts:["LILO","GRUB","GRUB 2","MBMP"],ans:3,diff:"中",exp:"LILO、GRUB、GRUB2 都是常見的開機管理程式（bootloader）。MBMP 不存在。"},
+{id:168,text:"在使用 bash 為文字操作介面的 Linux 系統中，下列哪一個為最合適的設定環境變數方式？",opts:["MYNAME=\"Hello Kitty\"","12Name=123","$NAME='Peter'","@name=Allen"],ans:0,diff:"中",exp:"環境變數命名：第一個字元只能是大小寫字母或底線，不能以數字或特殊字元開頭。"},
+{id:169,text:"Linux 系統管理員發現帳號 student 的擁有者已經離職，若要將帳號凍結，請問可以使用下列哪一個指令？",opts:["usermod -l student","userdel student","passwd -l student","passwd -L student"],ans:2,diff:"中",exp:"passwd -l（小寫 l）可以鎖住使用者帳號。userdel 是刪除帳號，usermod -l 是更改帳號名稱。"},
+{id:170,text:"系統管理員需要了解程序的執行者、CPU、記憶體、程序名稱及狀態，其它不需要，請問可以使用下列哪一個指令？",opts:["top -aux","top -ao comm,user,pid,%cpu,%mem,state","ps -aux","ps -Ao comm,user,pid,%cpu,%mem,state"],ans:3,diff:"中",exp:"ps -Ao 列出所有程序並指定自訂欄位（comm, user, pid, %cpu, %mem, state）。"},
+{id:171,text:"若想用 mount 指令一口氣將 /etc/fstab 中所有檔案系統掛載，在 mount 指令後面要加上哪一個參數？",opts:["-f","-d","-a","-m"],ans:2,diff:"中",exp:"mount -a 掛載 /etc/fstab 中所有檔案系統（all）。"},
+{id:172,text:"當輸入指令時，為加速輸入完整的指令或目錄名稱，可以利用下列哪一個按鍵做為輔助輸入？",opts:["Ctrl","Home","Tab","Shift"],ans:2,diff:"中",exp:"Tab 鍵可以將指令或目錄名稱進行自動補全（auto-completion）。"},
+{id:173,text:"關於 iptables 與 ip6tables 的敘述，下列哪一項錯誤？",opts:["iptables 與 ip6tables 是 Linux 系統內建的防火牆","可以協助建構 NAT 網路，實現多台電腦共用一個 public IP","iptables 與 ip6tables 都可以支援 IPv6 網路","iptables 是基於 netfilter 的防火牆技術"],ans:2,diff:"中",exp:"iptables 只支援 IPv4，ip6tables 才支援 IPv6。兩者都是基於 netfilter 框架。"},
+{id:174,text:"系統管理員習慣使用 list 指令代替 ls -al，請問下列哪一個指令正確？",opts:["list='ll -a'","alias list='ls -al'","$list=ls -al","list=ll"],ans:1,diff:"中",exp:"alias 指令可設定指令別名，格式為 alias 別名='指令'。"},
+{id:175,text:"一般使用者的預設家目錄是在下列哪一個目錄之下？",opts:["/usr","/var","/root","/home"],ans:3,diff:"中",exp:"大部份 Linux 使用者的家目錄都是規劃在 /home 之內（root 的家目錄是 /root）。"},
+{id:176,text:"下列哪一個指令可以每隔 1 秒列出系統狀態，共計 20 次？",opts:["vmstat 1 20","vmstat -1 -20","vmstat 1 -20","vmstat -1 20"],ans:0,diff:"中",exp:"vmstat 格式：vmstat [延時 [次數]]，不加負號。vmstat 1 20 表示每 1 秒更新，共 20 次。"},
+{id:177,text:"附圖指令中 ~comsap 代表下列哪一種意義？",opts:["是一個名稱為 ~comsap 的目錄","就是代表使用者 comsap 的家目錄","是一個事前定義的環境變數","就是代表 /tmp/comsap 這個目錄"],ans:1,diff:"難",exp:"~ 代表自己的家目錄，~username 代表指定使用者 username 的家目錄。"},
+{id:178,text:"小白工作目錄在 /home/white/dir01，想切換到 /opt/apache2/conf，請問下列哪一個指令可以達成目的？",opts:["cd opt/apache2/conf","cd ././opt/apache2/conf","cd ../../opt/apache2/conf","cd ../../../opt/apache2/conf"],ans:3,diff:"中",exp:"從 /home/white/dir01 到 /，需要三個 ..（dir01→white→home→/），再加 opt/apache2/conf。"},
+{id:179,text:"小紅想操作 who 查看目前登入系統的人，請問下列哪一個指令，可以最詳細的說明 who 指令的使用方式？",opts:["man who","who --help","whatis who","which who"],ans:0,diff:"難",exp:"man page 是 Linux 指令的詳細使用說明文件，比 --help 附加了更多的說明資訊。"},
+{id:180,text:"下列哪一個指令從終端讀取用戶輸入，並將該值指定給變數？",opts:["declare","get","read","set"],ans:2,diff:"中",exp:"read 命令接受用戶輸入並將字串拆分，將每個新單字指派給一個參數。"},
+{id:181,text:"針對經常會異動的檔案，通常最可能會放置在下列哪一個目錄內？",opts:["/proc","/root","/var","/usr"],ans:2,diff:"中",exp:"/var 目錄通常放置經常異動的檔案，例如 log、mail、spool 等。"},
+{id:182,text:"下列哪一項指令可以查詢目前正在背景執行的程序狀態？",opts:["jobs -l","backjobs -l","ps -backjobs","ps -background"],ans:0,diff:"中",exp:"jobs -l 提供目前正在背景執行的程序相關訊息與狀態（包含 PID）。"},
+{id:183,text:"下列哪一個檔案名稱，不是使用 Linux 常見的軟體套件檔名？",opts:["ssh.rpm","ssh.deb","ssh.pack","ssh.tar.gz"],ans:2,diff:"中",exp:".rpm（RPM）、.deb（Debian）、.tar.gz（tarball）都是常見格式；.pack 不是常見的套件格式。"},
+{id:184,text:"選擇排序法 shell 腳本中，set -x 開啟除錯，set +x 關閉除錯，前五行的輸出結果為？",opts:["選項A","選項B（set -x 和 set +x 之間的輸出）","選項C","選項D"],ans:1,diff:"中",exp:"set -x 開啟除錯，set +x 關閉除錯，故只有中間的指令執行結果會被顯示（含 + 前綴）。"},
+{id:185,text:"下列哪一個指令可以安裝 vlc 媒體播放機？",opts:["sudo apt install vlc","sudo apt reinstall vlc","sudo apt setup vlc","sudo apt vlc"],ans:0,diff:"中",exp:"sudo apt install vlc 安裝指定套件。reinstall 是重新安裝，setup 和直接接套件名不是正確語法。"},
+{id:186,text:"下列哪一個指令可以安裝 RPM 套件？",opts:["rpm -ivh pack-1.1.5-i386.rpm","rpm -Ivh pack-1.1.5-i386.rpm","rpm -uvh pack-1.1.5-i386.rpm","rpm -Uvh pack-1.1.5-i386.rpm"],ans:0,diff:"中",exp:"-ivh 是最常使用的組合：-i 安裝、-v 詳細輸出、-h 顯示進度。-U 是升級（upgrade），大寫 I/V 無效。"},
+{id:187,text:"local x 是 function1 的區域變數，全域變數 x=1，執行完 function1 和 function2 後，輸出結果為？",opts:["2","3","4","error"],ans:0,diff:"中",exp:"local x 是 function1 的區域變數，執行完 function1 後全域 x 仍為 1；function2 中 x 加一變為 2，故輸出 2。"},
+{id:188,text:"關於 free 指令的功能，下列敘述哪一項正確？",opts:["是用來觀察 CPU 的使用狀況","是用來觀察記憶體的使用狀況","是用來清除死掉的行程","是用來清除記憶體緩衝區的資料"],ans:1,diff:"中",exp:"free 可用於呈現記憶體的使用情況（已使用量、可使用量、swap 等）。"},
+{id:189,text:"請問 rsyslogd 的預設組態檔為下列哪一項？",opts:["/etc/rsyslog.conf","/etc/rsyslogd.conf","/etc/klog.conf","/etc/klogd.conf"],ans:0,diff:"中",exp:"rsyslogd 的預設組態檔為 /etc/rsyslog.conf。"},
+{id:190,text:"下列哪一個指令可以控制 nftables 這個封包過濾與分類框架？",opts:["nft","iptables","ip6tables","nft-control"],ans:0,diff:"中",exp:"nft 是 nftables 封包過濾與分類框架的管理工具，是 iptables 的繼任者。"},
+{id:191,text:"管理員想利用一行指令將 /comsap/temp 內所有創建日期超過 7 天且檔名是 temp.dat 的檔案全部刪除，不需逐一確認，下列哪一項是正確的指令？",opts:["find /comsap/temp -mtime +7 -name temp.dat -exec rm -f {}\\;","find /comsap/temp -mtime +7 -name temp.dat -exec rm {}\\;","find /comsap/temp -mtime -7 -name temp.dat -exec rm -f {}\\;","find /comsap/temp -mtime -7 -name temp.dat -exec rm {}\\;"],ans:0,diff:"易",exp:"find -mtime +7 找出超過 7 天的檔案（-7 是 7 天以內），-exec rm -f 強制刪除不確認。"},
+{id:192,text:"拿到一顆實體硬碟，必須經過三個步驟才可以在 Linux 使用，正確順序為？",opts:["掛載→格式化→建立分割區","格式化→建立分割區→掛載","建立分割區→格式化→掛載","建立分割區→掛載→格式化"],ans:2,diff:"中",exp:"正確順序：建立分割區（fdisk/parted）→格式化（mkfs）→掛載（mount）。"},
+{id:193,text:"建立一個名為 golf 的群組，應使用哪個指令？",opts:["makegrp golf","creategroup golf","newgrp golf","groupadd golf"],ans:3,diff:"中",exp:"groupadd 可用來建立新群組。newgrp 是切換當前 group，不是建立群組。"},
+{id:194,text:"系統管理員登入 Linux 後，若要查看目前有多少別名過的指令，可以使用下列哪一個指令？",opts:["alias -h","alias -l","alias","alias -a"],ans:2,diff:"中",exp:"alias 不加任何參數，即可列出所有別名指令。"},
+{id:195,text:"下列哪一項是開機過程的第一階段？",opts:["啟動載入器（LILO/GRUB）階段","韌體（BIOS/UEFI）階段","初始（init）階段","核心（kernel）階段"],ans:1,diff:"中",exp:"開機過程四階段依序：韌體（BIOS/UEFI）→啟動載入器→核心→初始（init/systemd）。"},
+{id:196,text:"系統管理員發現有使用者向他傳送大量的訊息，請問可以利用下列哪一項指令阻止別人向他傳送訊息？",opts:["rm users","mesg n","mv messages","rollback messages off"],ans:1,diff:"中",exp:"mesg n 關閉接受其他使用者傳來的訊息；mesg y 開啟。"},
+{id:197,text:"若要移除某個目錄（test）以及其內部所有檔案與子目錄，可以使用下列哪一項指令？",opts:["rm test","rm -rf test","rm -rf test/*","rm *"],ans:1,diff:"難",exp:"rm -r 遞迴刪除目錄和內容，-f 強制刪除不確認。(C) 只刪除 test 內的內容，不刪除 test 目錄本身。"},
+{id:198,text:"下列哪一個機制被普遍使用在有多台主機，但只通過一個公有 IP 地址訪問網際網路的私有網絡？",opts:["Zones","CIDR","NAT","SDN"],ans:2,diff:"中",exp:"NAT（Network Address Translation）普遍用於讓多台私有 IP 的主機共用一個公有 IP 存取網際網路。"},
+{id:199,text:"Peter 查看 info 指令次要章節的文章後，可以按下哪一個按鍵回到上一層主要章節的目錄？",opts:["Shift","Ctrl","Tab","u"],ans:3,diff:"難",exp:"操作 info 指令時，按下 u 可回到上一層文章目錄。"},
+{id:200,text:"小明的 Linux 中有兩個環境變數 HelloA = \"Peter\"，HelloB = \"Cat\"，下列哪一個指令可正確比較字串？",opts:["test HelloA = HelloB","test $HelloA -eq $HelloB","test $HelloA == $HelloB","test $HelloA $HelloB"],ans:2,diff:"中",exp:"使用 $ 取得環境變數的值，test 的字串比較使用 == 或 = 符號（-eq 用於整數）。"},
+{id:201,text:"Linux 管理員要將 guest 帳號的使用期限設定在 2023/12/25，請問可以使用下列哪一個指令？",opts:["usermod -d 2023-12-25 guest","limit -D 2023-12-25 guest","chage -E 2023-12-25 guest","userlimit --date 2023-12-25 guest"],ans:2,diff:"中",exp:"chage -E YYYY-MM-DD USER 可設定使用者帳號的使用期限（expiry date）。"},
+{id:202,text:"下列哪一項指令無法查看使用者 Winnie 的執行程序？",opts:["ps -u Winnie","ps -ef","ps Winnie","ps U Winnie"],ans:2,diff:"中",exp:"ps Winnie 不是正確的用法。ps -u 或 ps U 指定使用者，ps -ef 顯示所有程序。"},
+{id:203,text:"小王工程師想解開 cpio 備份的 php 檔案（my_php.cpio），並保留原來備份時的目錄結構以及檔案的變更日期，請問哪一個指令最適當？",opts:["cpio -v -F my_php.cpio","cpio -iv -F my_php.cpio","cpio -imv -F my_php.cpio","cpio -idmv -F my_php.cpio"],ans:3,diff:"中",exp:"cpio 解壓縮：-i 解壓縮、-d 在必要時創建目錄、-m 保留原檔案修改時間、-v 顯示過程。"},
+{id:204,text:"管理員想先停止邏輯卷冊（/dev/vg0/lv0）的可用性，應該輸入下列哪一項指令？",opts:["lvchange -an /dev/vg0/lv0","lvdisable /dev/vg0/lv0","lvchange -d /dev/vg0/lv0","lvcontrol -d /dev/vg0/lv0"],ans:0,diff:"中",exp:"lvchange -an 停用邏輯卷冊（-a 是 available，n 是 no）。lvdisable 和 lvcontrol 不是正確指令。"},
+{id:205,text:"系統管理員想要調查所有帳號並按英文字母順序排序，中間不重複，可以使用下列哪一個指令？",opts:["sort /etc/passwd | head -n \":\"","awk -F\":\" '{print $1}' /etc/passwd | uniq | sort","cat /etc/passwd | grep \":\" | sort","echo /etc/passwd | sort | uniq"],ans:1,diff:"易",exp:"awk -F: '{print $1}' 提取第一欄（帳號名稱），uniq 去重，sort 排序。"},
+{id:206,text:"下列哪一項不是基於 Linux 的作業系統？",opts:["iOS","Android","Raspberry Pi OS","Ubuntu"],ans:0,diff:"中",exp:"iOS 基於 BSD Unix（Darwin 核心），不是 Linux。Android、Raspberry Pi OS、Ubuntu 都是基於 Linux。"},
+{id:207,text:"若系統的 umask 設為 033，某使用者想把 /etc/file1 權限改成 444，以下敘述哪一項正確？",opts:["chmod 444 /etc/file1","chmod ugo+r /etc/file1","chmod a=rw /etc/file1","chmod u-w go-rw+r /etc/file1"],ans:0,diff:"中",exp:"chmod 444 直接設定為 r--r--r--（所有人只讀）。(B) 可能保留 w 權限。(C) 應為 a=r。"},
+{id:208,text:"建立 RAID 磁碟陣列的資訊必須建立在下列哪一個檔案中？",opts:["/etc/md.conf","/etc/mdadm.conf","/etc/md.cfg","/etc/md/md.conf"],ans:1,diff:"中",exp:"RAID 陣列的設定資訊存放在 /etc/mdadm.conf 檔案中。"},
+{id:209,text:"下列哪一個目錄存放 Linux 核心及開機相關檔案？",opts:["/bin","/boot","/root","/home"],ans:1,diff:"中",exp:"/boot 目錄存放 Linux 核心（vmlinuz）及開機相關檔案（如 GRUB 設定）。"},
+{id:210,text:"Linux 系統管理員若要通知登入的使用者下次系統備份的時間，可以利用下列哪一個檔案？",opts:["/etc/issue","/etc/version","/etc/term","/etc/motd"],ans:3,diff:"中",exp:"/etc/motd（Message of the Day）用於使用者登入系統後，在螢幕上顯示訊息。"},
+{id:211,text:"關於邏輯卷冊（Logical Volumes）的資訊，可以在下列哪一個目錄找到？",opts:["/dev/lvinfo","/dev/map","/dev/mapper","/dev/lvmap"],ans:2,diff:"中",exp:"邏輯卷冊的裝置節點可以在 /dev/mapper 目錄下找到。"},
+{id:212,text:"若要重新定義一個變數，可以使用下列哪一個命令將其從變數列表中刪除？",opts:["clear","delete","remove","unset"],ans:3,diff:"中",exp:"unset 是 shell 內建指令，可刪除變數或函式。"},
+{id:213,text:"關於 nohup 指令，下列敘述哪一項正確？",opts:["讓程序執行於背景中","使用者登出系統後，繼續於背景中執行該程序","使用者登出系統後，結束執行該程序","使用者登出系統後，該執行程序會暫停"],ans:1,diff:"中",exp:"nohup 使程序對 SIGHUP 信號免疫，用戶登出後程序繼續在背景執行，輸出到 nohup.out。"},
+{id:214,text:"可以將陣列中的元素一行一行地列出，TODO 應該填入下列哪一項（for i in TODO）？",opts:["${array[@]}","${array[#]}","${array[$]}","${array[0]}"],ans:0,diff:"中",exp:"${array[@]} 展開陣列中的所有元素；${array[0]} 只是第一個元素。"},
+{id:215,text:"指令 ./test.sh one two three，script 中使用 shift，執行結果為何？",opts:["選項A","選項B（$1=two, $2=three）","選項C","選項D"],ans:1,diff:"中",exp:"shift 指令可以將位置引數左移，shift 1 讓原來 $2 變成 $1，$3 變成 $2，$1 拋棄，故輸出選項 B。"},
+{id:216,text:"希望不正常關機時系統能根據記錄快速還原，下列哪一種檔案系統「無法」做到？",opts:["ext2","ext3","XFS","reiserfs"],ans:0,diff:"中",exp:"想要快速還原需要「日誌型（journaling）」檔案系統，ext2 不是日誌型。ext3、XFS、reiserfs 都是。"},
+{id:217,text:"關於標準的 Linux 檔案系統的檔案命名規則，請問下列哪一項正確？",opts:["檔案名稱不可以是數字開頭","檔案名稱只能有一個句點（.）","檔案名稱可以包含空格","檔案名稱不可以包含反斜線"],ans:2,diff:"中",exp:"Linux 檔案名稱可以數字開頭、可以有多個句點、可以包含空格（但不建議）和反斜線，只有斜線（/）不行。"},
+{id:218,text:"下列哪一個指令的參數，可以設定當一個檔案系統掛載超過特定次數時，強制執行 fsck 檔案系統檢查？",opts:["tune2fs -c","dump2fs","tune2fs -m","setmount"],ans:0,diff:"中",exp:"tune2fs -c 設定最大掛載次數（max mount count），超過後自動執行 fsck。"},
+{id:219,text:"下列哪一個特殊字元的運用，可將指令直接送至背景執行？",opts:["&","#","$","!"],ans:0,diff:"中",exp:"在指令後加上 & 字元，可將執行的指令直接移到背景執行。"},
+{id:220,text:"要成功執行 cp d1/f1 d2，需要的最小權限為？",opts:["對 d1 擁有 rx；對 d1/f1 擁有 rwx；對 d2 擁有 rwx","對 d1 擁有 rx；對 d1/f1 擁有 r；對 d2 擁有 rwx","對 d1 擁有 x；對 d1/f1 擁有 rw；對 d2 擁有 wx","對 d1 擁有 rx；對 d1/f1 擁有 rw；對 d2 擁有 rx"],ans:2,diff:"中",exp:"d1 需 x 進入目錄並取得索引；f1 需 r 讀取內容；d2 需 w 和 x 才能複製（寫入）檔案。"},
+{id:221,text:"關於 Linux Kernel module 的敘述，下列哪一項錯誤？",opts:["相關命令通常放置在 kmod 模組，並且已經安裝","指令 listmod 可以展示目前已經載入的 kernel module","指令 modinfo 可以查看指定 kernel module 的相關訊息","指令 depmod 可以查看 kernel module 並建立 modules.dep.bin 文件"],ans:1,diff:"中",exp:"listmod 不是正確指令。顯示已載入的 kernel module 應使用 lsmod 指令。"},
+{id:222,text:"請問下列哪一項不是 Bash Shell 的內建指令？",opts:["cd","rm","ll","mv"],ans:2,diff:"中",exp:"ll 不是 bash 內建指令，通常是 ls -l 的別名。cd 是內建指令，rm 和 mv 是外部指令（不是 shell builtin）。"},
+{id:223,text:"下列哪一個不是 firewalld 的配置方法？",opts:["使用 firewall-config 圖形化工具操作","直接編輯修改 XML","使用 firewall-cmd 指令來控制","使用動態偵查自動配置"],ans:3,diff:"中",exp:"firewalld 沒有動態偵查自動配置的功能。可透過 firewall-config（GUI）、XML 編輯、firewall-cmd 指令設定。"},
+{id:224,text:"在 ext2/ext3/ext4 環境下，請問下列哪一個指令可以變更 /dev/sdc1 的磁碟標籤為 ENI-2？",opts:["sudo e2label /dev/sdc1 ENI-2","sudo MTOOLS_SKIP_CHECK=1 mlabel -i /dev/sdc1 :: ENI-2","sudo ntfslabel /dev/sdc1","sudo e2e3e4label /dev/sdc1 ENI-2"],ans:0,diff:"中",exp:"e2label 適用於 ext2/ext3/ext4，可更動檔案系統的標籤。mlabel 用於 FAT，ntfslabel 用於 NTFS。"},
+{id:225,text:"針對 ls -l 執行後觀察到的權限欄位，下列敘述哪一項錯誤？",opts:["若顯示 -rw-r--r--，代表是一個可以被任何人讀取的檔案","若顯示 -rwxr-xr-x，代表是一個可以被任何人執行的可執行檔","若顯示 drwxr-xr-x，代表是一般目錄，任何人均可進入該目錄並查看目錄內容","若顯示 drwxr--r--，代表是一般目錄，除了所有者之外，其他人均無法查看目錄內容以及目錄內的相關資訊"],ans:3,diff:"中",exp:"drwxr--r-- 中 others 有 r（4），可以看到目錄內的檔案名稱，但沒有 x 所以無法進入目錄或查看詳細資訊。"},
+{id:226,text:"fdisk 指令中哪一個按鍵可以用來建立新的分割區？",opts:["c","m","n","t"],ans:2,diff:"易",exp:"fdisk 互動：n 新增分割區、p 顯示分割區、d 刪除分割區、m 顯示說明、w 存檔、t 更改類型。"},
+{id:227,text:"某一管理員需要替 A 員工新增名為 employee 的帳號，並授予可以使用 su 指令的 wheel 群組權限，可以使用下列哪一個指令？",opts:["useradd -G wheel employee","useradd employee","createuser -A wheel employee","newuser -G wheel employee"],ans:0,diff:"中",exp:"useradd -G wheel employee 新增帳號並同時加入 wheel 群組。-G 指定附加群組。"},
+{id:228,text:"若要自己快速產生一個 SSH 的 RSA 金鑰對，請問可以使用下列哪一個指令？",opts:["ssh -s rsa -file=server.key","openssl req -x509 -new -nodes -sha256 -utf8 -days 3650 -newkey rsa:2048 -keyout server.key -out server.crt","ssh-keygen -t rsa","openssh -newkey server.key"],ans:2,diff:"易",exp:"ssh-keygen -t rsa 產生 RSA 金鑰對（公鑰和私鑰）。openssl 產生 SSL/TLS 憑證。"},
+{id:229,text:"使用者執行 chmod g+w，順利把檔案權限改成 664，請問最有可能的 umask 設定？",opts:["umask 設定為 002","umask 設定為 022","umask 設定為 004","umask 設定為 044"],ans:1,diff:"中",exp:"umask 022 時新建檔案預設為 644（666-022）。執行 chmod g+w 後增加 group 的 w 權限，變成 664。"},
+{id:230,text:"若要查看 /etc/passwd 中的第 15 行至第 20 行的帳號資料，請問可以使用下列哪一個指令？",opts:["cat /etc/passwd | head -n 20","head -n 20 /etc/passwd | tail -n 5","select -n 15-20 /etc/passwd","tac /etc/passwd | tail -n 15"],ans:1,diff:"難",exp:"head -n 20 取前 20 行，再透過 tail -n 5 取最後 5 行（即第 16-20 行）。若要第 15-20 行應是 tail -n 6。"},
+{id:231,text:"請問下列哪一個命令「不」可用於備份系統或檔案？",opts:["tape","tar","dump","cpio"],ans:0,diff:"難",exp:"Linux 沒有 tape 指令。tar 用於壓縮備份，dump 用於檔案系統備份，cpio 用於封存。"},
+{id:232,text:"關於配額（quota）的敘述，下列哪一項錯誤？",opts:["quotaon：啟動 aquota.group 與 aquota.user","quotaoff：關閉 quota 的限制","setquota：設定磁碟 quota 限制","reportquota：檔案系統配額的彙總"],ans:3,diff:"中",exp:"正確指令是 repquota（不是 reportquota），用於檔案系統配額的彙總報告。"},
+{id:233,text:"關於統一可延伸韌體介面（UEFI）的主要特點，下列敘述哪一項錯誤？",opts:["對傳統的 BIOS 做改進","啟用安全開機","提供圖形介面","資安考量無開放網路功能"],ans:3,diff:"中",exp:"UEFI 支援連網功能（如網路開機 PXE），並非因資安考量而禁止網路功能。"},
+{id:234,text:"小華是 golf 群組的管理員，若要將小花的帳號 flower 加入 golf 群組，請問可以使用下列哪一個指令？",opts:["gpasswd -a flower golf","newgrp -a golf flower","groupadd -a flower golf","groupmod -aG flower golf"],ans:0,diff:"中",exp:"群組管理員可以利用 gpasswd -a 將使用者加入群組（-a 是 add）。"},
+{id:235,text:"小王想利用 dd 指令將備份的樹莓派映像檔（raspi_backup.img）燒錄到掛載在 /dev/sdb 的記憶卡，請問可以使用下列哪一個指令？",opts:["dd bs=4M if=/dev/sda of=raspi_backup.img","dd bs=4M of=/dev/sda if=raspi_backup.img","dd bs=4M if=/dev/sdb of=raspi_backup.img","dd bs=4M of=/dev/sdb if=raspi_backup.img"],ans:3,diff:"難",exp:"dd if 指定來源（input file），of 指定目的（output file）。燒錄到 SD 卡：if=raspi_backup.img，of=/dev/sdb。"},
+{id:236,text:"下列哪一個指令可以用來改變已存在磁碟分割區的大小，而不會損害該分割區？",opts:["resize2fs","parted","mkfs","rfdisk"],ans:1,diff:"中",exp:"parted 可以調整已存在分割區的大小（resize）。resize2fs 是調整 ext2/3/4 檔案系統大小，需在調整分割區後使用。"},
+{id:237,text:"將開發好的客製化 ERP 管理系統部署到 Linux，部署到哪一個目錄最佳？",opts:["/usr/local/bin","/usr/local","/home","/var"],ans:1,diff:"中",exp:"/usr/local 是本地安裝軟體的標準目錄，下可建立 bin、lib 等子目錄。/usr/local/bin 只適合放可執行檔。"},
+{id:238,text:"系統管理員想查詢目前正在使用中的系統核心版本，可以使用下列哪一個指令？",opts:["cat /etc/release","name -a","uname -r","kernel -h"],ans:2,diff:"易",exp:"uname -r 查詢系統核心版本（release），uname -a 顯示所有系統資訊。"},
+{id:239,text:"Linux 管理員需要將 student 帳號移出 golf 群組，請問可以使用下列哪一個指令？",opts:["usermod -dG golf student","gpasswd -d student golf","groupmod -d student golf","chgrp -n student golf"],ans:1,diff:"中",exp:"gpasswd -d student golf 將使用者 student 從 golf 群組移除（-d 是 delete）。"},
+{id:240,text:"小明登入 Linux 後，一進入 vi 會處於什麼模式，只能下按鍵指令，不能輸入文字？",opts:["Command Mode","Line Mode","Update Mode","Insert Mode"],ans:0,diff:"難",exp:"一進入 vi 會處於 Command Mode（命令模式），按 i/a/o 才能進入 Insert Mode 輸入文字。"},
+{id:241,text:"下列哪一個指令，可以用於顯示邏輯卷冊中，特定「實體卷冊（Physical Volumes）」的詳細資訊？",opts:["pvdisp","pvlist","pvdisplay","pvl"],ans:2,diff:"中",exp:"pvdisplay 顯示實體卷冊的詳細資訊。pvdisp、pvlist、pvl 不是正確指令。"},
+{id:242,text:"系統管理員想要計算 100/7 的數值，並取值至小數點以下五位，請問可以使用下列哪一個指令？",opts:["bc 'scale=5; 10/7'","echo 'scale=5; 100/7' | bc","print '10/7 scale=5'","bc 10.0/7"],ans:1,diff:"難",exp:"echo 'scale=5; 100/7' | bc 透過管線傳給 bc 計算，scale=5 設定小數位數。"},
+{id:243,text:"在 LVM 中，建立可供使用的「邏輯卷冊」應遵循哪一個正確順序？",opts:["建立實體卷冊→建立卷冊群組→建立邏輯卷冊→格式化→掛載","建立實體卷冊→建立邏輯卷冊→建立卷冊群組→格式化→掛載","掛載→建立實體卷冊→建立卷冊群組→建立邏輯卷冊→格式化","格式化→建立實體卷冊→建立邏輯卷冊→建立卷冊群組→掛載"],ans:0,diff:"中",exp:"LVM 步驟：pvcreate（實體卷冊）→vgcreate（卷冊群組）→lvcreate（邏輯卷冊）→mkfs（格式化）→mount（掛載）。"},
+{id:244,text:"若老闆想知道兩篇文章哪些地方被改了，請問可使用下列哪一個指令比較兩份文件不同處？",opts:["cat date1.txt date2.txt","diff date1.txt date2.txt","compare date1.txt date2.txt","patch date1.txt date2.txt"],ans:1,diff:"難",exp:"diff 可以比較兩份文件的不同之處，輸出差異訊息。patch 用於套用差異，cat 用於顯示內容。"},
+{id:245,text:"欲僅查詢系統使用過程中曾顯示的核心訊息，可參考下列哪一個檔案內容得知？",opts:["/var/log/boot.log","/var/log/dmesg","/var/log/messages","/var/log/syslog"],ans:1,diff:"中",exp:"/var/log/dmesg 記錄系統開機時核心偵測過程所產生的各項資訊（也可用 dmesg 指令查看）。"},
+{id:246,text:"小花使用 vim 編寫了 /etc/issue，當她想要存檔後關閉該檔案，請問可以使用下列哪一個指令？",opts:[":wp",":e /etc/issue",":wq",":q!"],ans:2,diff:"難",exp:"vim :wq 存檔後退出（w=write, q=quit）；:q! 不存檔強制退出；:e 開啟新檔案。"},
+{id:247,text:"某一使用者若要查詢自己所使用的 shell 是哪一種，可以利用下列哪一個檔案？",opts:["/etc/group","/etc/passwd","/etc/group.conf","/etc/passwd.conf"],ans:1,diff:"中",exp:"/etc/passwd 檔案內的最後一個欄位記錄 shell 的檔案路徑（如 /bin/bash）。"},
+{id:248,text:"研究生利用 diff 比較兩篇論文並輸出成 differ1，若要利用 differ1 更新 paper1 中的資料，請問可以使用下列哪一個指令？",opts:["update paper1 < differ1","patch paper1 < differ1","cat paper1 < differ1","more paper1 < differ1"],ans:1,diff:"中",exp:"patch 可以套用 diff 產生的差異檔案來更新原始檔案。"},
+{id:249,text:"Linux 管理員要查詢最近登入系統的使用者帳號以及時間，請問可以使用下列哪一個指令？",opts:["login","who","w","last"],ans:3,diff:"中",exp:"last 指令可查詢系統最近登入記錄（從 /var/log/wtmp 讀取）。who 顯示目前登入者。"},
+{id:250,text:"若要比較兩個備份檔案的不同處（逐 byte 比較），請問可以使用下列哪一個指令？",opts:["cat 2022_12_30.txt 2023_03_31.txt","cmp 2022_12_30.txt 2023_03_31.txt","more 2022_12_30.txt 2023_03_31.txt","less 2022_12_30.txt 2023_03_31.txt"],ans:1,diff:"易",exp:"cmp 以逐 byte 進行比較兩個文字檔不同之處（diff 是逐行比對）。"},
+{id:251,text:"關於 crontab 命令使用權限的敘述，下列哪一項錯誤？",opts:["如果存在 /etc/cron.allow，則只有此檔中列出的用戶可以使用 crontab","如果不存在 /etc/cron.allow，則所有用戶都可以提交 crontab，/etc/cron.deny 中列出的除外","如果 /etc/cron.allow 和 /etc/cron.deny 都不存在，則 crontab 命令需要具備 super user 權限","編輯或創建 /etc/cron.allow 和 /etc/cron.deny 不需要 super user 權限"],ans:3,diff:"中",exp:"編輯或創建 /etc/cron.allow 和 /etc/cron.deny 「需要」super user 權限，因為這些是系統控制檔案。"},
+{id:252,text:"在預設情況下，shell 中所有變數都被認為並儲存成下列哪一項？",opts:["character","float","integer","string"],ans:3,diff:"中",exp:"在 Linux shell 中，所有變數都被視為並儲存為字串（string），即使當它們被設定為數值。"},
+{id:253,text:"下列哪一項是 Ubuntu 22.04 默認的桌面環境？",opts:["Gnome","LXDE","KDE","Xfce"],ans:0,diff:"中",exp:"GNOME 是 Ubuntu 22.04 默認的桌面環境（GNOME Shell）。"},
+{id:254,text:"下列哪一項不是有效的 shell 變數名稱？",opts:["foo_2","_foo","_foo_2","2_foo"],ans:3,diff:"中",exp:"shell 變數名稱只能包含字母、數字或底線（_），且不能以數字開頭。2_foo 以數字開頭，無效。"},
+{id:255,text:"系統管理員發現公司的 Linux 系統可以使用 SSH 連線，他想要使用 SSH 來傳送本地端檔案到該主機上，請問可以使用下列哪一個指令？",opts:["ftp","http","https","sftp"],ans:3,diff:"中",exp:"sftp（SSH File Transfer Protocol）可以利用 SSH 連線安全地傳送檔案至遠端主機。"},
+{id:256,text:"下列哪一項指令可以樹狀圖的方式顯示執行程序、顯示每個程序識別碼，並且針對識別碼加以排序？",opts:["pstree -a","pstree -h","pstree -p -n","pstree -n"],ans:2,diff:"中",exp:"pstree -p 顯示 PID，-n 以數字（PID）排序。-a 顯示完整指令行，-h 標示當前程序。"},
+{id:257,text:"下列哪一個指令可以將使用者 lisa 的磁碟配額限制複製給使用者 vincent？",opts:["edquota -p lisa vincent","edquota -c lisa vincent","quotaon -p lisa vincent","quotaon -c lisa vincent"],ans:0,diff:"中",exp:"edquota -p lisa vincent 將 lisa 的配額設定當作 prototype，複製給 vincent。"},
+{id:258,text:"關於 free 指令功能，下列敘述哪一項正確？",opts:["是用來觀察 CPU 的使用狀況","是用來觀察記憶體的使用狀況（包括尚未使用、已經使用、swap）","是用來清除發生死結（dead lock）的行程","是用來清除記憶體緩衝區的資料"],ans:1,diff:"中",exp:"free 呈現目前系統上空閒與已使用的實體記憶體和 swap 狀況。"},
+{id:259,text:"假設有一個 cron 排程：* 9-17/2 * * * myjob，這個排程工作一天之內會執行多少次？",opts:["8","4","0","5"],ans:3,diff:"中",exp:"9-17/2 表示在 9-17 時，每隔 2 小時執行：9, 11, 13, 15, 17 點，共 5 次。分鐘 * 表示每分鐘，但問的是小時。"},
+{id:260,text:"下列哪一個指令，可以把一個實體磁碟分割初始化，變成實體卷冊（Physical Volumes）？",opts:["lvminit","pvcreate","pvinit","lvmadd"],ans:1,diff:"中",exp:"pvcreate 將實體磁碟分割初始化為 LVM 實體卷冊（PV）。其他指令都不是 Linux 實際存在的指令。"},
+{id:261,text:"下列哪一個 DNS 紀錄類型負責將主機名解析成 IP 地址？",opts:["A","NS","MX","SOA"],ans:0,diff:"中",exp:"A 記錄將主機名稱解析為 IPv4 地址（AAAA 記錄用於 IPv6）。NS 是名稱伺服器，MX 是郵件交換，SOA 是授權起始。"},
+{id:262,text:"firewalld 支援動態的更新技術，是以下列哪一種概念來管理防火牆？",opts:["zone","domain","piconet","subnet"],ans:0,diff:"中",exp:"firewalld 以「區域（zone）」的概念來管理防火牆，不同 zone 有不同的信任等級。"},
+{id:263,text:"將私有群組的 /opt/secrets 資料授權給特定員工 red 使用，應使用哪個指令？",opts:["chown red /opt/secrets","chmod 777 /opt/secrets","setfacl -m u:red:rwx /opt/secrets","chgrp red /opt/secrets"],ans:2,diff:"中",exp:"setfacl -m u:red:rwx 可針對特定帳號設定 ACL（Access Control List）權限。chmod 和 chown 是傳統權限，無法精確到特定使用者。"},
+{id:264,text:"若要將 /etc/passwd 內容以大寫字碼輸出，請問可以使用下列哪一個指令？",opts:["cat /etc/passwd | sed -s \"s/{a-z}/{A-Z}/g\"","cat /etc/passwd | awk -s \"{print a-z}\" \"{print A-Z}\"","cat /etc/passwd | tee -s \"{a-z}\" \"{A-Z}\"","cat /etc/passwd | tr '[:lower:]' '[:upper:]'"],ans:3,diff:"易",exp:"tr '[:lower:]' '[:upper:]' 將小寫轉換為大寫（transliterate）。"},
+{id:265,text:"執行 [[ 'A' == 'B' ]] 指令後，可以輸出指令的回傳值，來知道結果的指令為？",opts:["執行 echo @? 指令","使用 test 指令進行探測","查看 /var/log/messages 檔案","執行 echo $? 指令"],ans:3,diff:"中",exp:"$? 儲存上一個指令的退出狀態碼，0 為成功/真，1 為失敗/假。"},
+{id:266,text:"下列哪一個指令可以將某一個在背景執行的程序，轉換到前景執行？",opts:["fg","foreground","kill -7 PID","kill -SIGFOREGROUND PID"],ans:0,diff:"中",exp:"fg（foreground）可將背景執行的程序轉換到前景執行。"},
+{id:267,text:"下列哪一個指令無法查出哪些程序正在監聽指定的埠號（port no）？",opts:["netstat","lsof","vmstat","fuser"],ans:2,diff:"中",exp:"vmstat 只列出系統效能統計資料（procs、記憶體、swap、io 等），不會顯示程序的埠號。"},
+{id:268,text:"請問下列哪一項目錄應該跟 root 根目錄配置在相同磁碟分割區（partition）？",opts:["/boot","/home","/usr","/var"],ans:0,diff:"中",exp:"根據 FHS，/boot 必須與根目錄在同一分割區（開機時需要）。/home、/usr、/var 可以獨立分割區。"},
+{id:269,text:"指令 update-grub、update-grub2 實際上叫用下列哪一個程式產生 GRUB 設定檔案？",opts:["grub-install","grub-setup","grub-mkconfig","grup-config"],ans:2,diff:"中",exp:"update-grub 主要執行 grub-mkconfig -o /boot/grub/grub.cfg 來產生 GRUB 設定檔。"},
+{id:270,text:"系統管理員在登入 Linux 後，想將家目錄的檔案列成清單，在螢幕上顯示的同時可一併存入檔案 result.txt，請問可以使用下列哪一個指令？",opts:["ls | tee -a result.txt","ls > result.txt","ls -al < result.txt","tee | ls -a > result.txt"],ans:0,diff:"易",exp:"tee 指令可以將輸出結果同時顯示於螢幕與寫入檔案（-a 是 append，附加模式）。"},
+{id:271,text:"關於 at 相關指令的敘述，下列哪一項錯誤？",opts:["at 指令可以每隔一段時間重複執行指定的命令","atq 指令可以查詢使用者目前的 pending jobs","atrm 指令可以刪除指定的 jobs","at 指令可以透過交談式介面輸入指令，也可以利用 input direction 方式"],ans:0,diff:"中",exp:"at 只能執行一次性的排程任務，不能重複執行。重複執行應使用 crontab。"},
+{id:272,text:"若目前使用者的 umask 設定為 033，則新建立目錄的權限應為？",opts:["755","644","744","622"],ans:2,diff:"中",exp:"新建目錄基本權限為 777，umask 033 時：777 - 033 = 744（rwxr--r--）。"},
+{id:273,text:"關於 ps 和 ps -ef 的差異，下列敘述哪一項正確？",opts:["ps 只顯示母程序及其子程序的簡單訊息，ps -ef 顯示系統所有程序","ps -ef 只顯示母程序及其相關子程序，ps 顯示系統所有程序","ps 和 ps -ef 的輸出是一樣的","ps 根本沒有 -ef 的選項"],ans:0,diff:"中",exp:"ps 不加參數只顯示當前終端的程序，ps -ef 顯示系統所有程序（-e 所有，-f 完整格式）。"},
+{id:274,text:"使用 mdadm 創造 RAID 5、使用 /dev/sdb1、/dev/sdc1、/dev/sdd1，名為 /dev/md0，下列哪一項是所使用的指令？",opts:["sudo mdadm --create /dev/md0 --level=5 --raid-devices=3 /dev/sd[b-d]1","sudo mdadm --start /dev/md0 --level=5 --raid-devices=3 /dev/sd[b-d]1","sudo mdadm --begin /dev/md0 --level=5 --raid-devices=3 /dev/sd[b-d]1","sudo mdadm --construct /dev/md0 --level=5 --raid-devices=3 /dev/sd[b-d]1"],ans:0,diff:"中",exp:"mdadm --create 是建立 RAID 陣列的參數，--start/--begin/--construct 不是正確參數。"},
+{id:275,text:"新的 tar 版本已經能自動呼叫多種壓縮工具執行壓縮，已經壓縮的 tar 檔案也稱之為下列哪一項？",opts:["tarpackage","tarball","tarbag","tarsuit"],ans:1,diff:"中",exp:"已經壓縮的 tar 檔案通常被稱為 tarball（如 .tar.gz、.tar.bz2）。"},
+{id:276,text:"小王想要將自己的家目錄進行備份，且希望備份後的檔案會是最小，請問下列哪一項為最佳選項？",opts:["cd /home; tar -cf kevinwang.tgz kevinwang","locate ~kevinwang | tar -czf - > kevinwang.tar.gz","tar -cjf kevinwang.tar.bz2 ~kevinwang","tar -xjf kevinwang.tar.bz2 ~kevinwang"],ans:2,diff:"易",exp:"tar -cjf 使用 bzip2（-j）壓縮，壓縮率比 gzip（-z）更好。(A) 無壓縮。(D) -x 是解壓縮。"},
+{id:277,text:"下列哪一個指令可以掛載 /dev/sdb1 硬碟到檔案系統 /home1？",opts:["mount /dev/sdb1 /home1","mount /home1 /dev/sdb1","umount /dev/sdb1 /home1","umount /home1 /dev/sdb1"],ans:0,diff:"中",exp:"mount 格式：mount <裝置> <掛載點>。umount 是卸載，參數順序相反也不正確。"},
+{id:278,text:"下列哪一個指令可以取得 apache2 的所有 PID？",opts:["pidof apache2","pidall apache2","pid -a apache2","pid -all apache2"],ans:0,diff:"中",exp:"pidof 找出正在執行指定程式的所有 PID。pidall、pid 不是正確指令。"},
+{id:279,text:"使用 bash 指令執行 shell 腳本時，下列哪一項是常用來查看腳本是否有語法錯誤的選項？",opts:["-n","-v","-x","-d"],ans:0,diff:"中",exp:"bash -n 不執行腳本，只檢查語法；-v 執行前顯示腳本內容；-x 執行時顯示每行指令（除錯）。"},
+{id:280,text:"小王想確認執行 php -m 時，到底是哪一個目錄內的 php 會被執行，請問他應利用哪一個指令快速確認？",opts:["locate php","whereis php","which php","find php"],ans:2,diff:"中",exp:"which 根據環境變數 $PATH 找出可執行檔的路徑，顯示實際會被執行的那個。"},
+{id:281,text:"下列哪一個指令可以在第一個 SATA 磁碟上，建立出 btrfs 檔案系統？",opts:["mkfs /dev/sda1","mkfs.btrfs /dev/sda","mkfs.btrfs /dev/sda1","mkfs -b /dev/sda"],ans:1,diff:"中",exp:"mkfs.btrfs 建立 btrfs 檔案系統。/dev/sda 是整個磁碟（不加分割區號），題目說第一個磁碟。"},
+{id:282,text:"Linux 系統管理員若要設定統一的全域環境變數 JAVA_HOME=/sbin/java，請問可以利用下列哪一個檔案？",opts:["/etc/police","/etc/profile","/etc/config","/etc/login"],ans:1,diff:"中",exp:"/etc/profile 可以設定全域（所有使用者）環境變數，每次登入時都會執行。"},
+{id:283,text:"下列哪一個指令可以列出登錄時段中所定義的函式清單？",opts:["declare -s","declare -f","declare -L","declare -list"],ans:1,diff:"中",exp:"declare -f 表列出函式的名稱和定義；declare -F 只表列出函式的名稱。"},
+{id:284,text:"管理者想確認目前卷冊群組 vg0 剩餘空間，下列敘述哪一項錯誤？",opts:["想確認 vg0 剩餘空間是否不足，可用 vgshow vg0 指令","用 vgextend vg0 /dev/sdc1 可以將實體卷冊容量加入 vg0","用 lvextend -L +256Gib /dev/vg0/lv0 從 vg0 多挖 256GB 加入 lv0","尚須下達 xfs_growfs /media/lv0 擴展 XFS 檔案系統後才能使用"],ans:0,diff:"中",exp:"(A) 指令應該是 vgdisplay（顯示卷冊群組詳細資訊），vgshow 不是正確指令。"},
+{id:285,text:"系統管理員若要動態觀察帳號 peter 執行的所有程序佔用資源狀況，可以使用下列哪一個指令？",opts:["top -u peter","ps aux peter","top -o peter","ps auo"],ans:0,diff:"易",exp:"top -u username 只顯示指定使用者的程序，動態更新。"},
+{id:286,text:"下列哪一項指令可以監控所有程序的詳細動作？",opts:["top","fg","bg","pgrep"],ans:0,diff:"中",exp:"top 可用於即時呈現所有程序的詳細動作（CPU、記憶體、狀態等）。"},
+{id:287,text:"inode 記錄檔案的相關資訊，請問不包含下列哪一項？",opts:["檔案名稱","擁有使用者與群組","檔案大小","Data Block"],ans:0,diff:"中",exp:"inode 記錄：檔案大小、擁有者UID/GID、權限、時間戳記、連結數、data block 位置。檔案名稱是記錄在目錄中，不在 inode。"},
+{id:288,text:"系統管理員想在文字介面視窗上顯示兩組時間，中間間隔 10 秒，請問可以使用下列哪一個指令？",opts:["date ; sleep 10; date","date ; suspend 10; date","date ; stop 10; date","date ; resume 10; date"],ans:0,diff:"中",exp:"sleep 讓指令暫停指定秒數；使用 ; 分隔不同指令。"},
+{id:289,text:"系統管理員需要前後翻頁查看記錄檔，也需要查詢關鍵字，但不想修改檔案內容，請問可以使用下列哪一個指令？",opts:["cat /var/log/messages","more /var/log/messages","less /var/log/messages","tac /var/log/messages"],ans:2,diff:"中",exp:"less 可以前後翻頁（more 只能向前），也可以輸入 / 查詢關鍵字，且不修改檔案。"},
+{id:290,text:"當發現 /home 所在磁碟分割區快要滿了，若想找出是「哪個目錄」佔據了最多磁碟空間，應該下達下列哪一個指令？",opts:["du /home","df /home","ls /home","locate /home"],ans:0,diff:"中",exp:"du（disk usage）顯示目錄及其內容的磁碟使用量，可找出佔用最多空間的目錄。df 顯示整個磁碟分割區的使用狀況。"}
+];
+
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let state = {
+  mode: 'sequential',
+  queue: [],
+  current: 0,
+  answers: {},   // qId → shuffled index chosen by user (-1 = skip)
+  optMap: {},    // qId → { shuffledOpts, shuffledAns }
+  correctSet: new Set(),
+  wrongSet: new Set(),
+  answered: false,
+};
+
+// Build a per-question shuffled option map
+function buildOptMap(queue) {
+  const map = {};
+  queue.forEach(q => {
+    const indices = [0,1,2,3];
+    // Fisher-Yates on indices
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    map[q.id] = {
+      shuffledOpts: indices.map(i => q.opts[i]),
+      shuffledAns: indices.indexOf(q.ans),
+    };
+  });
+  return map;
+}
+
+let wrongHistory = [];
+try { wrongHistory = JSON.parse(localStorage.getItem('lq_wrong') || '[]'); } catch(e){}
+
+// ─────────────────────────────────────────────
+//  COUNT INPUT LOGIC
+// ─────────────────────────────────────────────
+function getMaxCount() {
+  if (state.mode === 'wrong') return wrongHistory.length || 1;
+  if (state.mode === 'random') {
+    const f = parseInt(document.getElementById('rangeFrom').value) || 1;
+    const t = parseInt(document.getElementById('rangeTo').value) || 290;
+    const pool = ALL_QUESTIONS.filter(q => q.id >= f && q.id <= t);
+    return pool.length;
+  }
+  return ALL_QUESTIONS.length;
+}
+
+function clampCount() {
+  const input = document.getElementById('countInput');
+  const max = getMaxCount();
+  let val = parseInt(input.value) || 1;
+  val = Math.max(1, Math.min(max, val));
+  input.value = val;
+  input.max = max;
+  document.getElementById('countHint').textContent = `最多 ${max} 題`;
+  return val;
+}
+
+function adjustCount(delta) {
+  const input = document.getElementById('countInput');
+  input.value = (parseInt(input.value) || 1) + delta;
+  clampCount();
+}
+
+function setCountMax() {
+  document.getElementById('countInput').value = getMaxCount();
+  clampCount();
+}
+
+// Range inputs
+function updateRangeBadge() {
+  const f = parseInt(document.getElementById('rangeFrom').value) || 1;
+  const t = parseInt(document.getElementById('rangeTo').value) || 290;
+  const pool = ALL_QUESTIONS.filter(q => q.id >= f && q.id <= t);
+  const badge = document.getElementById('rangeBadge');
+  badge.textContent = `${pool.length} 題可選`;
+  badge.className = 'range-badge' + (pool.length > 0 ? ' active' : '');
+  clampCount();
+}
+
+function applyPreset(from, to) {
+  document.getElementById('rangeFrom').value = from;
+  document.getElementById('rangeTo').value = to;
+  updateRangeBadge();
+  // highlight active preset
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.classList.remove('active-preset');
+    const [bf, bt] = btn.textContent.replace('全部','1–290').split('–').map(Number);
+    if (bf === from && bt === to) btn.classList.add('active-preset');
+  });
+}
+
+document.getElementById('rangeFrom').addEventListener('input', () => { updateRangeBadge(); });
+document.getElementById('rangeTo').addEventListener('input', () => { updateRangeBadge(); });
+document.getElementById('countInput').addEventListener('input', clampCount);
+document.getElementById('countInput').addEventListener('change', clampCount);
+
+// ─────────────────────────────────────────────
+//  START
+// ─────────────────────────────────────────────
+function selectMode(el, mode) {
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.mode = mode;
+  // Show/hide range row
+  const rangeRow = document.getElementById('rangeRow');
+  rangeRow.classList.toggle('visible', mode === 'random');
+  // Recalculate max count
+  setTimeout(clampCount, 0);
+}
+
+function startQuiz() {
+  const count = clampCount();
+  state.answers = {};
+  state.correctSet = new Set();
+  state.wrongSet = new Set();
+  state.current = 0;
+  state.answered = false;
+
+  let pool = [...ALL_QUESTIONS];
+
+  if (state.mode === 'wrong') {
+    if (wrongHistory.length === 0) {
+      alert('尚無錯題記錄！請先完成一次練習。');
+      return;
+    }
+    pool = ALL_QUESTIONS.filter(q => wrongHistory.includes(q.id));
+  } else if (state.mode === 'random') {
+    const f = parseInt(document.getElementById('rangeFrom').value) || 1;
+    const t = parseInt(document.getElementById('rangeTo').value) || 290;
+    pool = ALL_QUESTIONS.filter(q => q.id >= f && q.id <= t);
+    pool = shuffle([...pool]);
+  }
+
+  state.queue = pool.slice(0, Math.min(count, pool.length));
+  state.optMap = buildOptMap(state.queue);
+  if (state.queue.length === 0) {
+    alert('沒有符合條件的題目，請重新設定範圍。');
+    return;
+  }
+
+  document.getElementById('headerStats').style.display = 'flex';
+  updateHeaderStats();
+  showScreen('screenQuiz');
+  renderQuestion();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ─────────────────────────────────────────────
+//  RENDER QUESTION
+// ─────────────────────────────────────────────
+function renderQuestion() {
+  const q = state.queue[state.current];
+  const total = state.queue.length;
+  const pct = ((state.current) / total * 100).toFixed(1);
+
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = `${state.current + 1} / ${total}`;
+  document.getElementById('qNum').textContent = `#${q.id}`;
+
+  const diffEl = document.getElementById('qDiff');
+  diffEl.textContent = q.diff;
+  diffEl.className = 'q-diff ' + ({易:'easy',中:'medium',難:'hard'}[q.diff] || 'medium');
+
+  document.getElementById('qText').textContent = q.text;
+
+  const list = document.getElementById('optionsList');
+  list.innerHTML = '';
+  const labels = ['A', 'B', 'C', 'D'];
+  const { shuffledOpts } = state.optMap[q.id];
+  shuffledOpts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-key">${labels[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectAnswer(i);
+    list.appendChild(btn);
+  });
+
+  document.getElementById('explanationBox').style.display = 'none';
+  document.getElementById('btnNext').disabled = true;
+  document.getElementById('btnPrev').disabled = state.current === 0;
+  state.answered = false;
+
+  if (state.answers[q.id] !== undefined) {
+    restoreAnswer(q, state.answers[q.id]);
+  }
+  updateHeaderStats();
+}
+
+function restoreAnswer(q, chosen) {
+  state.answered = true;
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(btn => btn.disabled = true);
+  const sAns = state.optMap[q.id].shuffledAns;
+  if (chosen >= 0) {
+    if (chosen === sAns) btns[chosen].classList.add('correct');
+    else { btns[chosen].classList.add('wrong'); btns[sAns].classList.add('reveal'); }
+  } else {
+    btns[sAns].classList.add('reveal');
+  }
+  document.getElementById('explanationText').textContent = q.exp;
+  document.getElementById('explanationBox').style.display = 'block';
+  document.getElementById('btnNext').disabled = false;
+}
+
+function selectAnswer(idx) {
+  if (state.answered) return;
+  state.answered = true;
+  const q = state.queue[state.current];
+  state.answers[q.id] = idx;
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(btn => btn.disabled = true);
+  const sAns = state.optMap[q.id].shuffledAns;
+  if (idx === sAns) {
+    btns[idx].classList.add('correct');
+    state.correctSet.add(q.id);
+    state.wrongSet.delete(q.id);
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[sAns].classList.add('reveal');
+    state.wrongSet.add(q.id);
+    state.correctSet.delete(q.id);
+  }
+  document.getElementById('explanationText').textContent = q.exp;
+  document.getElementById('explanationBox').style.display = 'block';
+  document.getElementById('btnNext').disabled = false;
+  updateHeaderStats();
+  saveWrongHistory();
+}
+
+function skipQuestion() {
+  if (state.answered) return;
+  const q = state.queue[state.current];
+  state.answers[q.id] = -1;
+  state.wrongSet.add(q.id);
+  state.correctSet.delete(q.id);
+  restoreAnswer(q, -1);
+  saveWrongHistory();
+  updateHeaderStats();
+}
+
+function goPrev() {
+  if (state.current > 0) { state.current--; renderQuestion(); }
+}
+
+function goNext() {
+  if (state.current < state.queue.length - 1) { state.current++; renderQuestion(); }
+  else showResult();
+}
+
+function updateHeaderStats() {
+  document.getElementById('hCurrent').textContent = state.current + 1;
+  document.getElementById('hTotal').textContent = state.queue.length;
+  document.getElementById('hCorrect').textContent = state.correctSet.size;
+  document.getElementById('hWrong').textContent = state.wrongSet.size;
+}
+
+// ─────────────────────────────────────────────
+//  RESULT
+// ─────────────────────────────────────────────
+function showResult() {
+  const total = state.queue.length;
+  const correct = state.correctSet.size;
+  const wrong = state.wrongSet.size;
+  const answered = total - state.queue.filter(q => state.answers[q.id] === undefined).length;
+  const pct = answered > 0 ? Math.round(correct / answered * 100) : 0;
+
+  document.getElementById('scorePct').textContent = pct + '%';
+  const circle = document.getElementById('scoreCircle');
+  const color = pct >= 80 ? 'var(--green)' : pct >= 60 ? 'var(--yellow)' : 'var(--red)';
+  circle.style.borderColor = color;
+  document.getElementById('scorePct').style.color = color;
+  document.getElementById('resultTitle').textContent = pct >= 80 ? '🎉 表現優秀！' : pct >= 60 ? '✊ 繼續加油！' : '📚 需要加強練習';
+  document.getElementById('resultSubtitle').textContent = `答對率 ${pct}%，共作答 ${answered} 題`;
+  document.getElementById('rTotal').textContent = answered;
+  document.getElementById('rCorrect').textContent = correct;
+  document.getElementById('rWrong').textContent = wrong;
+  document.getElementById('wrongCount').textContent = wrong;
+
+  const wrongList = document.getElementById('wrongList');
+  wrongList.innerHTML = '';
+  const noWrong = document.getElementById('noWrong');
+  const wrongItems = state.queue.filter(q => state.wrongSet.has(q.id));
+  noWrong.style.display = wrongItems.length === 0 ? 'block' : 'none';
+  wrongItems.forEach(q => {
+    const chosen = state.answers[q.id];
+    const { shuffledOpts, shuffledAns } = state.optMap[q.id];
+    const labs = ['A','B','C','D'];
+    const el = document.createElement('div');
+    el.className = 'review-item wrong-item';
+    el.innerHTML = `<div class="review-item-header"><span class="ri-num">#${q.id}</span><span class="ri-q">${q.text.substring(0,80)}${q.text.length>80?'...':''}</span></div><div class="ri-answers"><span class="ri-mine">✗ 作答：${chosen>=0?labs[chosen]+'. '+shuffledOpts[chosen]:'(跳過)'}</span><span class="ri-correct">✓ 正確：${labs[shuffledAns]}. ${shuffledOpts[shuffledAns]}</span></div>`;
+    wrongList.appendChild(el);
+  });
+
+  const allList = document.getElementById('allList');
+  allList.innerHTML = '';
+  state.queue.forEach(q => {
+    const chosen = state.answers[q.id];
+    const isCorrect = chosen === state.optMap[q.id].shuffledAns;
+    const el = document.createElement('div');
+    el.className = 'review-item';
+    el.style.borderLeft = `3px solid ${isCorrect?'var(--green)':'var(--red)'}`;
+    el.innerHTML = `<div class="review-item-header"><span class="ri-num">#${q.id}</span><span class="ri-q">${isCorrect?'✓ ':'✗ '}${q.text.substring(0,70)}${q.text.length>70?'...':''}</span></div>`;
+    allList.appendChild(el);
+  });
+
+  showScreen('screenResult');
+  document.getElementById('headerStats').style.display = 'none';
+}
+
+function retryWrong() {
+  state.mode = 'wrong';
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('selected', c.dataset.mode==='wrong'));
+  startQuiz();
+}
+
+function saveWrongHistory() {
+  const allWrong = new Set(wrongHistory);
+  state.wrongSet.forEach(id => allWrong.add(id));
+  state.correctSet.forEach(id => allWrong.delete(id));
+  wrongHistory = [...allWrong];
+  try { localStorage.setItem('lq_wrong', JSON.stringify(wrongHistory)); } catch(e){}
+}
+
+// ─────────────────────────────────────────────
+//  TAB & SCREEN
+// ─────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['wrong','all'][i]===name));
+  document.getElementById('panelWrong').classList.toggle('active', name==='wrong');
+  document.getElementById('panelAll').classList.toggle('active', name==='all');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'screenStart') document.getElementById('headerStats').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+//  KEYBOARD
+// ─────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (document.querySelector('.screen.active')?.id !== 'screenQuiz') return;
+  const key = e.key.toUpperCase();
+  if (!state.answered) {
+    if (key==='A') selectAnswer(0);
+    else if (key==='B') selectAnswer(1);
+    else if (key==='C') selectAnswer(2);
+    else if (key==='D') selectAnswer(3);
+  }
+  if (key==='ARROWRIGHT' && !document.getElementById('btnNext').disabled) goNext();
+  if (key==='ARROWLEFT') goPrev();
+});
+
+// Init
+clampCount();
+</script>
+</body>
+</html>
